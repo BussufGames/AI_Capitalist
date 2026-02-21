@@ -7,17 +7,19 @@
  * Description:
  * The Service Locator and main entry point of the application.
  * Resides in the Bootstrap scene, registers all IServices, initializes them
- * in a STRICT order (UGS -> Data -> Economy), and transitions to Main.
+ * in a STRICT order, and transitions to Main.
  * ----------------------------------------------------------------------------
  * Change Log:
  * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
  * 2023-10-28 - Bussuf Senior Dev - Enforced strict initialization order to prevent NRE.
  * 2023-10-28 - Bussuf Senior Dev - Added OfflineProgressManager to sequence.
+ * 2023-10-28 - Bussuf Senior Dev - Added TierManager to sequence.
  * ----------------------------------------------------------------------------
  */
 
 using AI_Capitalist.Data;
 using AI_Capitalist.Economy;
+using AI_Capitalist.Gameplay;
 using AI_Capitalist.Services;
 using BussufGames.Core;
 using System;
@@ -79,21 +81,19 @@ namespace AI_Capitalist.Core
 			this.Log("Starting Game Sequence...");
 
 			// STRICT INITIALIZATION ORDER:
-			// 1. Cloud & Auth
 			InitializeService<UGSManager>();
-
-			// 2. Data
 			InitializeService<DataManager>();
-
-			// 3. Economy
 			InitializeService<EconomyManager>();
-
-			// 4. Offline Progress (Requires Data & Economy)
 			InitializeService<OfflineProgressManager>();
+
+			// 5. Gameplay Logic
+			InitializeService<TierManager>();
+
+			// 6. User Interface (Must load after Logic is ready)
+			InitializeService<UI.UIManager>();
 
 			this.LogSuccess("All services initialized successfully.");
 
-			// 5. Load the Main Game Scene
 			this.Log("Loading Main Scene...");
 			SceneManager.LoadScene(1);
 		}
@@ -115,4 +115,4 @@ namespace AI_Capitalist.Core
 
 // ----------------------------------------------------------------------------
 // EOF
-// -----------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
