@@ -6,14 +6,19 @@
  * ----------------------------------------------------------------------------
  * Description:
  * The Service Locator and main entry point of the application.
- * Resides in the Bootstrap scene, registers all IServices, initializes them, 
- * and transitions to the Main scene.
+ * Resides in the Bootstrap scene, registers all IServices, initializes them
+ * in a STRICT order (UGS -> Data -> Economy), and transitions to Main.
  * ----------------------------------------------------------------------------
  * Change Log:
  * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
+ * 2023-10-28 - Bussuf Senior Dev - Enforced strict initialization order to prevent NRE.
+ * 2023-10-28 - Bussuf Senior Dev - Added OfflineProgressManager to sequence.
  * ----------------------------------------------------------------------------
  */
 
+using AI_Capitalist.Data;
+using AI_Capitalist.Economy;
+using AI_Capitalist.Services;
 using BussufGames.Core;
 using System;
 using System.Collections.Generic;
@@ -22,13 +27,11 @@ using UnityEngine.SceneManagement;
 
 namespace AI_Capitalist.Core
 {
-	// Ensure this script runs before almost anything else
 	[DefaultExecutionOrder(-100)]
 	public class CoreManager : MonoBehaviour
 	{
 		public static CoreManager Instance { get; private set; }
 
-		// The "Phonebook" of all our managers
 		private readonly Dictionary<Type, IService> _services = new Dictionary<Type, IService>();
 
 		private void Awake()
@@ -45,9 +48,6 @@ namespace AI_Capitalist.Core
 			this.Log("CoreManager awoken and set to DontDestroyOnLoad.");
 		}
 
-		/// <summary>
-		/// Registers a service into the locator.
-		/// </summary>
 		public void RegisterService<T>(T service) where T : IService
 		{
 			var type = typeof(T);
@@ -62,9 +62,6 @@ namespace AI_Capitalist.Core
 			}
 		}
 
-		/// <summary>
-		/// Retrieves a service from the locator.
-		/// </summary>
 		public T GetService<T>() where T : class, IService
 		{
 			var type = typeof(T);
@@ -77,29 +74,45 @@ namespace AI_Capitalist.Core
 			return null;
 		}
 
-		/// <summary>
-		/// Bootstraps the game. Called via a UI Button or a Bootstrapper script 
-		/// once all essential managers are loaded in the Init scene.
-		/// </summary>
 		public void StartGameSequence()
 		{
 			this.Log("Starting Game Sequence...");
 
-			// 1. Initialize all registered services
-			foreach (var service in _services.Values)
-			{
-				service.Initialize();
-			}
+			// STRICT INITIALIZATION ORDER:
+			// 1. Cloud & Auth
+			InitializeService<UGSManager>();
+
+			// 2. Data
+			InitializeService<DataManager>();
+
+			// 3. Economy
+			InitializeService<EconomyManager>();
+
+			// 4. Offline Progress (Requires Data & Economy)
+			InitializeService<OfflineProgressManager>();
 
 			this.LogSuccess("All services initialized successfully.");
 
-			// 2. Load the Main Game Scene (Assuming Scene 1 is Main)
+			// 5. Load the Main Game Scene
 			this.Log("Loading Main Scene...");
 			SceneManager.LoadScene(1);
+		}
+
+		private void InitializeService<T>() where T : class, IService
+		{
+			var service = GetService<T>();
+			if (service != null)
+			{
+				service.Initialize();
+			}
+			else
+			{
+				this.LogError($"CRITICAL: Service {typeof(T).Name} is missing from the Bootstrap sequence!");
+			}
 		}
 	}
 }
 
 // ----------------------------------------------------------------------------
 // EOF
-// ----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------------------------
