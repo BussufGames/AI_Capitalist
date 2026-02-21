@@ -11,6 +11,7 @@
  * ----------------------------------------------------------------------------
  * Change Log:
  * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
+ * 2023-10-29 - Bussuf Senior Dev - Added Milestone Bar, State Images, and Multi-buy split text.
  * ----------------------------------------------------------------------------
  */
 
@@ -30,25 +31,29 @@ namespace AI_Capitalist.UI
 		[SerializeField] private TMP_Text nameText;
 		[SerializeField] private TMP_Text levelText;
 		[SerializeField] private TMP_Text revenueText;
-		[SerializeField] private TMP_Text costText;
-		[SerializeField] private TMP_Text stateText;
+
+		[Header("Buy Button Texts")]
+		[SerializeField] private TMP_Text buyAmountText;
+		[SerializeField] private TMP_Text buyCostText;
 
 		[Header("UI Elements - Images")]
 		[SerializeField] private Image iconImage;
 		[SerializeField] private Image progressBarFill;
+		[SerializeField] private Image milestoneBarFill;
+		[SerializeField] private Image actionButtonStateImage;
 
 		[Header("Buttons")]
-		[SerializeField] private Button actionButton; // Manual click / Pay Debt
+		[SerializeField] private Button actionButton;
 		[SerializeField] private Button buyButton;
 
 		private TierController _controller;
+		private TierVisualData _visualData;
 		private RectTransform _rectTransform;
 
 		private void Awake()
 		{
 			_rectTransform = GetComponent<RectTransform>();
 
-			// Setup button listeners
 			actionButton.onClick.AddListener(OnActionClicked);
 			buyButton.onClick.AddListener(OnBuyClicked);
 		}
@@ -56,15 +61,12 @@ namespace AI_Capitalist.UI
 		public void Initialize(TierController controller, TierVisualData visualData)
 		{
 			_controller = controller;
+			_visualData = visualData;
 
-			// Apply visual data
 			if (visualData != null)
 			{
 				nameText.text = visualData.DisplayName;
-				if (visualData.TierIcon != null)
-				{
-					iconImage.sprite = visualData.TierIcon;
-				}
+				if (visualData.TierIcon != null) iconImage.sprite = visualData.TierIcon;
 			}
 			else
 			{
@@ -74,6 +76,13 @@ namespace AI_Capitalist.UI
 			// Subscribe to logic events (Decoupling)
 			_controller.OnProgressUpdated += UpdateProgressBar;
 			_controller.OnDataChanged += RefreshDisplay;
+
+			var economy = Core.CoreManager.Instance.GetService<EconomyManager>();
+			if (economy != null)
+			{
+				economy.OnBuyModeChanged += RefreshDisplay;
+				economy.OnBalanceChanged += (balance) => RefreshBuyButtonInteractability();
+			}
 
 			RefreshDisplay();
 		}
@@ -85,77 +94,97 @@ namespace AI_Capitalist.UI
 				_controller.OnProgressUpdated -= UpdateProgressBar;
 				_controller.OnDataChanged -= RefreshDisplay;
 			}
+
+			if (Core.CoreManager.Instance != null)
+			{
+				var economy = Core.CoreManager.Instance.GetService<EconomyManager>();
+				if (economy != null)
+				{
+					economy.OnBuyModeChanged -= RefreshDisplay;
+					// Note: Unsubscribing from anonymous lambda balance is tricky, kept simple for MVP.
+				}
+			}
 		}
 
 		private void UpdateProgressBar(float normalizedProgress)
 		{
-			// Direct assignment is best for performance when called every frame
 			progressBarFill.fillAmount = normalizedProgress;
 		}
 
 		private void RefreshDisplay()
 		{
 			levelText.text = $"Lvl: {_controller.DynamicData.OwnedUnits}";
+			milestoneBarFill.fillAmount = _controller.GetMilestoneProgress();
 
-			// Revenue calculation
 			BigDouble baseRev = BigDouble.Parse(_controller.StaticData.Base_Rev);
-			BigDouble totalRev = baseRev * _controller.DynamicData.OwnedUnits;
+			BigDouble totalRev = baseRev * _controller.DynamicData.OwnedUnits * _controller.GetMilestoneMultiplier();
 			revenueText.text = $"Rev: ${totalRev.ToCurrencyString()}";
 
-			// Next Cost calculation (Using GameManager/Locator for Economy would be better, 
-			// but we can ask the controller's system if needed. For now, we calculate locally or ask Core).
-			var economy = Core.CoreManager.Instance.GetService<EconomyManager>();
-			if (economy != null)
-			{
-				BigDouble nextCost = economy.CalculateNextUnitCost(_controller.StaticData.TierID, _controller.DynamicData.OwnedUnits);
-				costText.text = $"Buy: ${nextCost.ToCurrencyString()}";
-				buyButton.interactable = economy.CurrentBalance >= nextCost;
-			}
+			UpdateBuyButtonDisplay();
+			UpdateStateImageDisplay();
+		}
 
-			// State Management display
+		private void UpdateBuyButtonDisplay()
+		{
+			var economy = Core.CoreManager.Instance.GetService<EconomyManager>();
+			if (economy == null) return;
+
+			BigDouble nextCost = economy.GetBuyCostAndAmount(_controller.StaticData.TierID, _controller.DynamicData.OwnedUnits, out int amountToBuy);
+
+			buyAmountText.text = economy.CurrentBuyMode == BuyMode.Max ? $"Buy MAX" : $"Buy {amountToBuy}";
+			buyCostText.text = $"${nextCost.ToCurrencyString()}";
+
+			RefreshBuyButtonInteractability();
+		}
+
+		private void RefreshBuyButtonInteractability()
+		{
+			var economy = Core.CoreManager.Instance.GetService<EconomyManager>();
+			if (economy == null) return;
+
+			BigDouble cost = economy.GetBuyCostAndAmount(_controller.StaticData.TierID, _controller.DynamicData.OwnedUnits, out int amountToBuy);
+			buyButton.interactable = economy.CurrentBalance >= cost && amountToBuy > 0;
+		}
+
+		private void UpdateStateImageDisplay()
+		{
+			if (_visualData == null) return;
+
 			if (_controller.DynamicData.CurrentState == Data.ManagerState.AI)
 			{
-				stateText.text = "AI RUNNING";
-				stateText.color = Color.cyan;
+				actionButtonStateImage.sprite = _visualData.StateAIRunning;
 				actionButton.interactable = false;
 			}
 			else if (_controller.DynamicData.CurrentState == Data.ManagerState.Human)
 			{
 				if (_controller.IsHumanOnStrike())
 				{
-					stateText.text = "STRIKE! PAY DEBT";
-					stateText.color = Color.red;
+					actionButtonStateImage.sprite = _visualData.StateHumanStrike;
 					actionButton.interactable = true;
 				}
 				else
 				{
-					stateText.text = "HUMAN WORKING";
-					stateText.color = Color.yellow;
+					actionButtonStateImage.sprite = _visualData.StateHumanWorking;
 					actionButton.interactable = false;
 				}
 			}
 			else
 			{
-				stateText.text = "MANUAL";
-				stateText.color = Color.white;
+				actionButtonStateImage.sprite = _visualData.StateManual;
 				actionButton.interactable = true;
 			}
 		}
 
 		private void OnActionClicked()
 		{
-			// Simple Punch animation on click
 			iconImage.transform.DOPunchScale(Vector3.one * 0.2f, 0.2f, 10, 1);
-
-			// Notify logic
 			_controller.ManualClick();
 		}
 
 		private void OnBuyClicked()
 		{
-			// Juicy punch effect on the whole panel when buying
 			_rectTransform.DOPunchScale(Vector3.one * 0.05f, 0.2f, 10, 1);
-			_controller.BuyUnit();
+			_controller.BuyUnits();
 		}
 	}
 }

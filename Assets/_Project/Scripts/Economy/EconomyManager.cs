@@ -7,9 +7,11 @@
  * Description:
  * The Core Economy Engine. Holds the Master JSON table in memory, 
  * handles BigDouble conversions, and manages the primary game balance.
+ * Includes Geometric Series math for multi-purchases (x1, x10, x100, MAX).
  * ----------------------------------------------------------------------------
  * Change Log:
  * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
+ * 2023-10-29 - Bussuf Senior Dev - Added BuyMode (x1,x10,x100,Max) & Geometric series cost math.
  * ----------------------------------------------------------------------------
  */
 
@@ -24,12 +26,15 @@ using UnityEngine;
 
 namespace AI_Capitalist.Economy
 {
+	public enum BuyMode { x1 = 1, x10 = 10, x100 = 100, Max = 999 }
+
 	public class EconomyManager : MonoBehaviour, IService
 	{
-		// Action to notify UI when balance changes (Decoupling)
 		public event Action<BigDouble> OnBalanceChanged;
+		public event Action OnBuyModeChanged;
 
 		public BigDouble CurrentBalance { get; private set; }
+		public BuyMode CurrentBuyMode { get; private set; } = BuyMode.x1;
 
 		private Dictionary<int, TierStaticData> _masterTable = new Dictionary<int, TierStaticData>();
 		private DataManager _dataManager;
@@ -57,12 +62,23 @@ namespace AI_Capitalist.Economy
 			LoadPlayerBalance();
 		}
 
-		/// <summary>
-		/// Loads the economy balancing from a JSON file (currently Resources, later remote).
-		/// </summary>
+		public void ToggleBuyMode()
+		{
+			CurrentBuyMode = CurrentBuyMode switch
+			{
+				BuyMode.x1 => BuyMode.x10,
+				BuyMode.x10 => BuyMode.x100,
+				BuyMode.x100 => BuyMode.Max,
+				BuyMode.Max => BuyMode.x1,
+				_ => BuyMode.x1
+			};
+
+			this.Log($"Buy Mode changed to: {CurrentBuyMode}");
+			OnBuyModeChanged?.Invoke();
+		}
+
 		private void LoadMasterTableConfig()
 		{
-			// For MVP, we load from a local Resources file named "MasterTable"
 			TextAsset jsonFile = Resources.Load<TextAsset>("MasterTable");
 			if (jsonFile == null)
 			{
@@ -81,8 +97,6 @@ namespace AI_Capitalist.Economy
 
 		private void LoadPlayerBalance()
 		{
-			// The PlayerSaveData stores string to prevent JSON loss. 
-			// We convert it to BigDouble here.
 			string savedBalance = _dataManager.GameData.CurrentBalance;
 			CurrentBalance = BigDouble.Parse(savedBalance);
 			this.Log($"Player starting balance: {CurrentBalance.ToCurrencyString()}");
@@ -118,27 +132,47 @@ namespace AI_Capitalist.Economy
 		}
 
 		/// <summary>
-		/// Calculates the cost of upgrading a tier based on the geometric series formula:
-		/// Cost = BaseCost * (GrowthFactor ^ CurrentOwnedUnits)
+		/// Calculates the cost and actual amount of units to buy based on the current BuyMode.
+		/// Uses the Geometric Series formula for rapid O(1) calculation.
 		/// </summary>
-		public BigDouble CalculateNextUnitCost(int tierID, int currentOwnedUnits)
+		public BigDouble GetBuyCostAndAmount(int tierID, int currentOwnedUnits, out int amountToBuy)
 		{
+			amountToBuy = 0;
 			var config = GetTierConfig(tierID);
 			if (config == null) return BigDouble.Zero;
 
 			BigDouble baseCost = BigDouble.Parse(config.Base_Cost);
-			// cost = base * (growth ^ units)
-			return baseCost * BigDouble.Pow(config.Growth_Factor, currentOwnedUnits);
+			double r = config.Growth_Factor;
+			BigDouble a = baseCost * BigDouble.Pow(r, currentOwnedUnits); // Cost of the immediate next unit
+
+			if (CurrentBuyMode == BuyMode.Max)
+			{
+				if (CurrentBalance < a)
+				{
+					amountToBuy = 1; // Show cost of 1 even if can't afford
+					return a;
+				}
+
+				// Max formula: n = floor( log_r( (Balance * (r-1) / a) + 1 ) )
+				BigDouble rhs = (CurrentBalance * (r - 1.0) / a) + 1.0;
+				double n = BigDouble.Log10(rhs) / Math.Log10(r);
+				amountToBuy = (int)Math.Floor(n);
+
+				// Return total cost for 'amountToBuy' units
+				return a * (BigDouble.Pow(r, amountToBuy) - 1.0) / (r - 1.0);
+			}
+			else
+			{
+				amountToBuy = (int)CurrentBuyMode;
+				// Sum formula: a * (r^n - 1) / (r - 1)
+				return a * (BigDouble.Pow(r, amountToBuy) - 1.0) / (r - 1.0);
+			}
 		}
 
 		private void UpdateSaveData()
 		{
-			// Save string representation back to Data layer
 			_dataManager.GameData.CurrentBalance = CurrentBalance.ToString();
 			OnBalanceChanged?.Invoke(CurrentBalance);
-
-			// Note: We don't call _dataManager.SaveGame() on EVERY coin picked up 
-			// to save performance. Saving should be done periodically or on exit.
 		}
 	}
 }

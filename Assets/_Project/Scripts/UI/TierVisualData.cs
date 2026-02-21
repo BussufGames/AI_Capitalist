@@ -10,6 +10,7 @@
  * ----------------------------------------------------------------------------
  * Change Log:
  * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
+ * 2023-10-29 - Bussuf Senior Dev - Added state sprites for the action button.
  * ----------------------------------------------------------------------------
  */
 
@@ -28,6 +29,12 @@ namespace AI_Capitalist.UI
 
 		[Tooltip("The icon representing the business.")]
 		public Sprite TierIcon;
+
+		[Header("State Button Sprites")]
+		public Sprite StateManual;
+		public Sprite StateHumanWorking;
+		public Sprite StateHumanStrike;
+		public Sprite StateAIRunning;
 	}
 }
 

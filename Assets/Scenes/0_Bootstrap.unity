@@ -394,7 +394,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d36a5282d2b5a784189b7e1efcf28edf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AI_Capitalist.UI.UIManager
-  tierUIPrefab: {fileID: 0}
+  tierUIPrefab: {fileID: 385246904435947978, guid: 0f42e47287291b34cab07aa135df329f, type: 3}
   uiContainer: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

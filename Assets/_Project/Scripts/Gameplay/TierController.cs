@@ -11,6 +11,8 @@
  * ----------------------------------------------------------------------------
  * Change Log:
  * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
+ * 2023-10-29 - Bussuf Senior Dev - Added Global Milestones logic (x2 revenue).
+ * 2023-10-29 - Bussuf Senior Dev - Updated Buy logic to support multi-buy.
  * ----------------------------------------------------------------------------
  */
 
@@ -26,9 +28,11 @@ namespace AI_Capitalist.Gameplay
 {
 	public class TierController : MonoBehaviour
 	{
-		// Events for the UI layer to listen to (Decoupling)
-		public event Action<float> OnProgressUpdated; // Passes a normalized value (0.0 to 1.0)
-		public event Action OnDataChanged;            // Fired when stats/units/states change
+		// Global milestones array for MVP
+		private static readonly int[] MILESTONES = { 10, 25, 50, 100, 200, 300, 400, 500, 1000 };
+
+		public event Action<float> OnProgressUpdated;
+		public event Action OnDataChanged;
 
 		public TierDynamicData DynamicData { get; private set; }
 		public TierStaticData StaticData { get; private set; }
@@ -53,7 +57,6 @@ namespace AI_Capitalist.Gameplay
 
 		private void Update()
 		{
-			// Do not process if uninitialized or if the player owns 0 units
 			if (!IsInitialized || DynamicData.OwnedUnits <= 0) return;
 
 			if (DynamicData.CurrentState == ManagerState.AI)
@@ -68,21 +71,16 @@ namespace AI_Capitalist.Gameplay
 
 		private void ProcessWorkingState(float speedMultiplier, bool isHuman)
 		{
-			if (isHuman && IsHumanOnStrike())
-			{
-				return; // The human is striking! Zzz... No progress.
-			}
+			if (isHuman && IsHumanOnStrike()) return;
 
 			float actualCycleTime = StaticData.Cycle_Time / speedMultiplier;
 			DynamicData.CurrentCycleProgress += Time.deltaTime;
 
-			// Notify UI about the progress bar movement
 			OnProgressUpdated?.Invoke(Mathf.Clamp01(DynamicData.CurrentCycleProgress / actualCycleTime));
 
 			if (DynamicData.CurrentCycleProgress >= actualCycleTime)
 			{
 				CompleteCycle(isHuman);
-				// Reset progress (keep remainder for precision)
 				DynamicData.CurrentCycleProgress -= actualCycleTime;
 			}
 		}
@@ -90,7 +88,8 @@ namespace AI_Capitalist.Gameplay
 		private void CompleteCycle(bool isHuman)
 		{
 			BigDouble baseRev = BigDouble.Parse(StaticData.Base_Rev);
-			BigDouble earned = baseRev * DynamicData.OwnedUnits;
+			// Apply Milestone Multipliers
+			BigDouble earned = baseRev * DynamicData.OwnedUnits * GetMilestoneMultiplier();
 
 			_economyManager.AddIncome(earned);
 
@@ -98,8 +97,6 @@ namespace AI_Capitalist.Gameplay
 			{
 				BigDouble salary = BigDouble.Parse(StaticData.Base_Human_Salary_Per_Cycle);
 				BigDouble currentDebt = BigDouble.Parse(DynamicData.AccumulatedDebt);
-
-				// Add salary to debt. The player hasn't lost money yet, just owes it.
 				DynamicData.AccumulatedDebt = (currentDebt + salary).ToString();
 			}
 
@@ -116,33 +113,66 @@ namespace AI_Capitalist.Gameplay
 			BigDouble currentDebt = BigDouble.Parse(DynamicData.AccumulatedDebt);
 			int missedPayments = (int)Math.Floor((currentDebt / salary).ToDouble());
 
-			// If the human missed 5 payments, they strike.
 			return missedPayments >= 5;
 		}
 
-		// --- PUBLIC ACTIONS (Called by UI or Input later) ---
+		// --- MILESTONE LOGIC ---
+
+		public int GetMilestoneMultiplier()
+		{
+			int multi = 1;
+			for (int i = 0; i < MILESTONES.Length; i++)
+			{
+				if (DynamicData.OwnedUnits >= MILESTONES[i]) multi *= 2;
+				else break;
+			}
+			return multi;
+		}
+
+		public float GetMilestoneProgress()
+		{
+			int lastMilestone = 0;
+			int nextMilestone = MILESTONES[0];
+
+			for (int i = 0; i < MILESTONES.Length; i++)
+			{
+				if (DynamicData.OwnedUnits >= MILESTONES[i])
+				{
+					lastMilestone = MILESTONES[i];
+					nextMilestone = (i + 1 < MILESTONES.Length) ? MILESTONES[i + 1] : MILESTONES[i];
+				}
+				else
+				{
+					break;
+				}
+			}
+
+			if (lastMilestone == nextMilestone) return 1f; // Reached max milestone
+
+			float currentProgress = DynamicData.OwnedUnits - lastMilestone;
+			float requiredForNext = nextMilestone - lastMilestone;
+			return Mathf.Clamp01(currentProgress / requiredForNext);
+		}
+
+		// --- PUBLIC ACTIONS ---
 
 		public void ManualClick()
 		{
-			// Can only manually click if NO manager is present
 			if (DynamicData.CurrentState != ManagerState.None) return;
-
-			float actualCycleTime = StaticData.Cycle_Time;
-			// For MVP manual clicking is instant. If you want a progress bar for manual, we adapt here.
-			// Let's make it instant for the basic clicker feel.
 			CompleteCycle(false);
-			_dataManager.SaveGame(); // Save on action
+			_dataManager.SaveGame();
 		}
 
-		public void BuyUnit()
+		public void BuyUnits()
 		{
-			BigDouble cost = _economyManager.CalculateNextUnitCost(StaticData.TierID, DynamicData.OwnedUnits);
-			if (_economyManager.TrySpend(cost))
+			BigDouble cost = _economyManager.GetBuyCostAndAmount(StaticData.TierID, DynamicData.OwnedUnits, out int amountToBuy);
+
+			if (amountToBuy > 0 && _economyManager.TrySpend(cost))
 			{
-				DynamicData.OwnedUnits++;
+				DynamicData.OwnedUnits += amountToBuy;
 				_dataManager.SaveGame();
 				OnDataChanged?.Invoke();
-				this.LogSuccess($"Bought unit for {StaticData.BusinessName}. Total: {DynamicData.OwnedUnits}");
+				this.LogSuccess($"Bought {amountToBuy} units for {StaticData.BusinessName}. Total: {DynamicData.OwnedUnits}");
 			}
 		}
 	}
