@@ -13,5 +13,9 @@ MonoBehaviour:
   m_Name: TierVisualData_ 1
   m_EditorClassIdentifier: Assembly-CSharp::AI_Capitalist.UI.TierVisualData
   TierID: 1
-  DisplayName: 
-  TierIcon: {fileID: 0}
+  DisplayName: CAPTCHA Solver
+  TierIcon: {fileID: 8244463499562110626, guid: a60444e333c3244448cb2fa51d16d479, type: 3}
+  StateManual: {fileID: -8875082060809689725, guid: a47a473420ee0374db017f44382960d0, type: 3}
+  StateHumanWorking: {fileID: 0}
+  StateHumanStrike: {fileID: 0}
+  StateAIRunning: {fileID: 0}

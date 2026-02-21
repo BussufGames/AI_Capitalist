@@ -11,7 +11,8 @@
  * ----------------------------------------------------------------------------
  * Change Log:
  * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
- * 2023-10-29 - Bussuf Senior Dev - Added Milestone Bar, State Images, and Multi-buy split text.
+ * 2023-10-29 - Bussuf Senior Dev - Added Milestones, States, Multi-buy split text.
+ * 2023-10-29 - Bussuf Senior Dev - Fixed DOComplete bug and connected Manual state lock.
  * ----------------------------------------------------------------------------
  */
 
@@ -73,7 +74,6 @@ namespace AI_Capitalist.UI
 				nameText.text = $"Tier {_controller.StaticData.TierID}";
 			}
 
-			// Subscribe to logic events (Decoupling)
 			_controller.OnProgressUpdated += UpdateProgressBar;
 			_controller.OnDataChanged += RefreshDisplay;
 
@@ -101,7 +101,6 @@ namespace AI_Capitalist.UI
 				if (economy != null)
 				{
 					economy.OnBuyModeChanged -= RefreshDisplay;
-					// Note: Unsubscribing from anonymous lambda balance is tricky, kept simple for MVP.
 				}
 			}
 		}
@@ -160,7 +159,7 @@ namespace AI_Capitalist.UI
 				if (_controller.IsHumanOnStrike())
 				{
 					actionButtonStateImage.sprite = _visualData.StateHumanStrike;
-					actionButton.interactable = true;
+					actionButton.interactable = true; // Click to pay debt
 				}
 				else
 				{
@@ -171,19 +170,25 @@ namespace AI_Capitalist.UI
 			else
 			{
 				actionButtonStateImage.sprite = _visualData.StateManual;
-				actionButton.interactable = true;
+				// Button is interactable only if we are NOT currently working
+				actionButton.interactable = !_controller.IsWorkingManually;
 			}
 		}
 
 		private void OnActionClicked()
 		{
+			// CRITICAL: DOComplete forces any running animation to finish instantly, preventing infinite scaling on spam clicks.
+			iconImage.transform.DOComplete();
 			iconImage.transform.DOPunchScale(Vector3.one * 0.2f, 0.2f, 10, 1);
+
 			_controller.ManualClick();
 		}
 
 		private void OnBuyClicked()
 		{
+			_rectTransform.DOComplete();
 			_rectTransform.DOPunchScale(Vector3.one * 0.05f, 0.2f, 10, 1);
+
 			_controller.BuyUnits();
 		}
 	}

@@ -2,21 +2,21 @@
   "Tiers": [
     {
       "TierID": 1,
-      "BusinessName": "Captcha Solver",
-      "Base_Cost": "4",
+      "BusinessName": "Lemonade Stand",
+      "Base_Cost": "10",
       "Growth_Factor": 1.07,
       "Base_Rev": "1",
-      "Cycle_Time": 0.6,
+      "Cycle_Time": 2.0,
       "Human_Hire_Cost": "100",
-      "Base_Human_Salary_Per_Cycle": "1",
+      "Base_Human_Salary_Per_Cycle": "0.5",
       "AI_Hire_Cost": "1000"
     },
     {
       "TierID": 2,
-      "BusinessName": "Customer Support",
+      "BusinessName": "Newspaper Delivery",
       "Base_Cost": "60",
-      "Growth_Factor": 1.07,
-      "Base_Rev": "20",
+      "Growth_Factor": 1.15,
+      "Base_Rev": "60",
       "Cycle_Time": 3.0,
       "Human_Hire_Cost": "500",
       "Base_Human_Salary_Per_Cycle": "10",

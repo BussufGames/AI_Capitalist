@@ -11,8 +11,8 @@
  * ----------------------------------------------------------------------------
  * Change Log:
  * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
- * 2023-10-29 - Bussuf Senior Dev - Added Global Milestones logic (x2 revenue).
- * 2023-10-29 - Bussuf Senior Dev - Updated Buy logic to support multi-buy.
+ * 2023-10-29 - Bussuf Senior Dev - Added Global Milestones & Multi-buy logic.
+ * 2023-10-29 - Bussuf Senior Dev - Converted ManualClick to time-based progress.
  * ----------------------------------------------------------------------------
  */
 
@@ -28,7 +28,6 @@ namespace AI_Capitalist.Gameplay
 {
 	public class TierController : MonoBehaviour
 	{
-		// Global milestones array for MVP
 		private static readonly int[] MILESTONES = { 10, 25, 50, 100, 200, 300, 400, 500, 1000 };
 
 		public event Action<float> OnProgressUpdated;
@@ -36,10 +35,11 @@ namespace AI_Capitalist.Gameplay
 
 		public TierDynamicData DynamicData { get; private set; }
 		public TierStaticData StaticData { get; private set; }
+		public bool IsWorkingManually { get; private set; }
+		public bool IsInitialized { get; private set; }
 
 		private EconomyManager _economyManager;
 		private DataManager _dataManager;
-		public bool IsInitialized { get; private set; }
 
 		public void Initialize(TierDynamicData dynamicData, TierStaticData staticData)
 		{
@@ -61,15 +61,20 @@ namespace AI_Capitalist.Gameplay
 
 			if (DynamicData.CurrentState == ManagerState.AI)
 			{
-				ProcessWorkingState(DynamicData.CurrentAISpeedMulti, false);
+				ProcessWorkingState(DynamicData.CurrentAISpeedMulti, false, false);
 			}
 			else if (DynamicData.CurrentState == ManagerState.Human)
 			{
-				ProcessWorkingState(DynamicData.CurrentHumanSpeedMulti, true);
+				ProcessWorkingState(DynamicData.CurrentHumanSpeedMulti, true, false);
+			}
+			else if (IsWorkingManually)
+			{
+				// Manual processing runs at normal speed (1.0x)
+				ProcessWorkingState(1.0f, false, true);
 			}
 		}
 
-		private void ProcessWorkingState(float speedMultiplier, bool isHuman)
+		private void ProcessWorkingState(float speedMultiplier, bool isHuman, bool isManual)
 		{
 			if (isHuman && IsHumanOnStrike()) return;
 
@@ -81,14 +86,26 @@ namespace AI_Capitalist.Gameplay
 			if (DynamicData.CurrentCycleProgress >= actualCycleTime)
 			{
 				CompleteCycle(isHuman);
-				DynamicData.CurrentCycleProgress -= actualCycleTime;
+
+				if (isManual)
+				{
+					DynamicData.CurrentCycleProgress = 0f;
+					IsWorkingManually = false;
+				}
+				else
+				{
+					DynamicData.CurrentCycleProgress -= actualCycleTime;
+				}
+
+				// Force progress bar update and UI refresh (to re-enable buttons)
+				OnProgressUpdated?.Invoke(Mathf.Clamp01(DynamicData.CurrentCycleProgress / actualCycleTime));
+				OnDataChanged?.Invoke();
 			}
 		}
 
 		private void CompleteCycle(bool isHuman)
 		{
 			BigDouble baseRev = BigDouble.Parse(StaticData.Base_Rev);
-			// Apply Milestone Multipliers
 			BigDouble earned = baseRev * DynamicData.OwnedUnits * GetMilestoneMultiplier();
 
 			_economyManager.AddIncome(earned);
@@ -99,8 +116,6 @@ namespace AI_Capitalist.Gameplay
 				BigDouble currentDebt = BigDouble.Parse(DynamicData.AccumulatedDebt);
 				DynamicData.AccumulatedDebt = (currentDebt + salary).ToString();
 			}
-
-			OnDataChanged?.Invoke();
 		}
 
 		public bool IsHumanOnStrike()
@@ -147,7 +162,7 @@ namespace AI_Capitalist.Gameplay
 				}
 			}
 
-			if (lastMilestone == nextMilestone) return 1f; // Reached max milestone
+			if (lastMilestone == nextMilestone) return 1f;
 
 			float currentProgress = DynamicData.OwnedUnits - lastMilestone;
 			float requiredForNext = nextMilestone - lastMilestone;
@@ -158,9 +173,11 @@ namespace AI_Capitalist.Gameplay
 
 		public void ManualClick()
 		{
-			if (DynamicData.CurrentState != ManagerState.None) return;
-			CompleteCycle(false);
-			_dataManager.SaveGame();
+			// Block click if a manager is working, or if we are already manually working
+			if (DynamicData.CurrentState != ManagerState.None || IsWorkingManually) return;
+
+			IsWorkingManually = true;
+			OnDataChanged?.Invoke(); // Refresh UI to disable the button
 		}
 
 		public void BuyUnits()
