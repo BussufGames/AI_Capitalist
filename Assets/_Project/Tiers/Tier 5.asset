@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 745efd50d3c52924d9b9bac165ba3ebe, type: 3}
+  m_Name: Tier 5
+  m_EditorClassIdentifier: Assembly-CSharp::TierData
+  _tierName: High-Frequency Trading
+  _tierIcon: {fileID: 0}
+  _baseCost: 103680
+  _baseRevenue: 2160
+  _baseCycleTimeSeconds: 24
+  _costMultiplier: 1.07
+  _humanManagerShiftCycles: 5
+  _humanManagerRestDurationInCycles: 2
+  _humanManagerSpeedMultiplier: 1
+  _humanManagerBaseSalary: 4000
+  _aiManagerUnlockCost: 1000000
+  _aiManagerSpeedMultiplier: 0.5
