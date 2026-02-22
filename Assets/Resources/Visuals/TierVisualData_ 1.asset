@@ -16,6 +16,6 @@ MonoBehaviour:
   DisplayName: CAPTCHA Solver
   TierIcon: {fileID: 8244463499562110626, guid: a60444e333c3244448cb2fa51d16d479, type: 3}
   StateManual: {fileID: -8875082060809689725, guid: a47a473420ee0374db017f44382960d0, type: 3}
-  StateHumanWorking: {fileID: 0}
-  StateHumanStrike: {fileID: 0}
-  StateAIRunning: {fileID: 0}
+  StateHumanWorking: {fileID: -2542418250449390616, guid: d3422898c53bd06418a8607722b4860a, type: 3}
+  StateHumanStrike: {fileID: 7175680700154133198, guid: 1a9fb8bdded19b944ad1a60cca3aa0c2, type: 3}
+  StateAIRunning: {fileID: 8776637981372578773, guid: ca94ebffb0905b64b8f4ea6da106c01b, type: 3}

@@ -2,27 +2,27 @@
  * ----------------------------------------------------------------------------
  * Project: AI Capitalist
  * Author:  Bussuf Senior Dev
- * Date:    2023-10-28
+ * Date:    2023-10-29
  * ----------------------------------------------------------------------------
  * Description:
  * The core logical controller for a single business tier. 
- * Handles the timer loop (Update), manager states, debt calculation, 
- * and notifies listeners when progress or data changes.
+ * Handles the timer loop, manager states, debt calculation, and hiring.
  * ----------------------------------------------------------------------------
  * Change Log:
  * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
  * 2023-10-29 - Bussuf Senior Dev - Added Global Milestones & Multi-buy logic.
  * 2023-10-29 - Bussuf Senior Dev - Converted ManualClick to time-based progress.
+ * 2023-10-29 - Bussuf Senior Dev - Added HireHuman, HireAI, and PayDebt logic.
+ * 2023-10-29 - Bussuf Senior Dev - Ensured ManualClick triggers a SaveGame event.
  * ----------------------------------------------------------------------------
  */
 
-using AI_Capitalist.Core;
-using AI_Capitalist.Data;
-using AI_Capitalist.Economy;
-using BreakInfinity;
-using BussufGames.Core;
 using System;
 using UnityEngine;
+using BreakInfinity;
+using AI_Capitalist.Data;
+using AI_Capitalist.Economy;
+using AI_Capitalist.Core;
 
 namespace AI_Capitalist.Gameplay
 {
@@ -50,8 +50,6 @@ namespace AI_Capitalist.Gameplay
 			_dataManager = CoreManager.Instance.GetService<DataManager>();
 
 			IsInitialized = true;
-			this.Log($"Tier {StaticData.TierID} ({StaticData.BusinessName}) Logic Initialized.");
-
 			OnDataChanged?.Invoke();
 		}
 
@@ -69,7 +67,6 @@ namespace AI_Capitalist.Gameplay
 			}
 			else if (IsWorkingManually)
 			{
-				// Manual processing runs at normal speed (1.0x)
 				ProcessWorkingState(1.0f, false, true);
 			}
 		}
@@ -97,7 +94,6 @@ namespace AI_Capitalist.Gameplay
 					DynamicData.CurrentCycleProgress -= actualCycleTime;
 				}
 
-				// Force progress bar update and UI refresh (to re-enable buttons)
 				OnProgressUpdated?.Invoke(Mathf.Clamp01(DynamicData.CurrentCycleProgress / actualCycleTime));
 				OnDataChanged?.Invoke();
 			}
@@ -130,8 +126,6 @@ namespace AI_Capitalist.Gameplay
 
 			return missedPayments >= 5;
 		}
-
-		// --- MILESTONE LOGIC ---
 
 		public int GetMilestoneMultiplier()
 		{
@@ -173,23 +167,62 @@ namespace AI_Capitalist.Gameplay
 
 		public void ManualClick()
 		{
-			// Block click if a manager is working, or if we are already manually working
 			if (DynamicData.CurrentState != ManagerState.None || IsWorkingManually) return;
 
 			IsWorkingManually = true;
-			OnDataChanged?.Invoke(); // Refresh UI to disable the button
+			_dataManager.SaveGame(); // Forces a local save immediately on click
+			OnDataChanged?.Invoke();
 		}
 
 		public void BuyUnits()
 		{
 			BigDouble cost = _economyManager.GetBuyCostAndAmount(StaticData.TierID, DynamicData.OwnedUnits, out int amountToBuy);
-
 			if (amountToBuy > 0 && _economyManager.TrySpend(cost))
 			{
 				DynamicData.OwnedUnits += amountToBuy;
 				_dataManager.SaveGame();
 				OnDataChanged?.Invoke();
-				this.LogSuccess($"Bought {amountToBuy} units for {StaticData.BusinessName}. Total: {DynamicData.OwnedUnits}");
+			}
+		}
+
+		// --- MANAGERS LOGIC ---
+
+		public void HireHumanManager()
+		{
+			BigDouble cost = BigDouble.Parse(StaticData.Human_Hire_Cost);
+			if (DynamicData.CurrentState == ManagerState.None && _economyManager.TrySpend(cost))
+			{
+				DynamicData.CurrentState = ManagerState.Human;
+				_dataManager.SaveGame();
+				OnDataChanged?.Invoke();
+			}
+		}
+
+		public void HireAIManager()
+		{
+			BigDouble baseAiCost = BigDouble.Parse(StaticData.AI_Hire_Cost);
+			BigDouble currentDebt = BigDouble.Parse(DynamicData.AccumulatedDebt);
+			BigDouble totalCost = baseAiCost + currentDebt;
+
+			if (DynamicData.CurrentState != ManagerState.AI && _economyManager.TrySpend(totalCost))
+			{
+				DynamicData.CurrentState = ManagerState.AI;
+				DynamicData.AccumulatedDebt = "0";
+				IsWorkingManually = false;
+
+				_dataManager.SaveGame();
+				OnDataChanged?.Invoke();
+			}
+		}
+
+		public void PayHumanDebt()
+		{
+			BigDouble currentDebt = BigDouble.Parse(DynamicData.AccumulatedDebt);
+			if (currentDebt > 0 && _economyManager.TrySpend(currentDebt))
+			{
+				DynamicData.AccumulatedDebt = "0";
+				_dataManager.SaveGame();
+				OnDataChanged?.Invoke();
 			}
 		}
 	}

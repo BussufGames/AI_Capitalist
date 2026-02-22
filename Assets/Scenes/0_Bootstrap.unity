@@ -319,6 +319,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 81681061c5e80e849bb0b032a18322cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AI_Capitalist.Data.DataManager
+  autoSaveInterval: 5
+  cloudSaveThrottle: 45
 --- !u!114 &1010257390
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -367,7 +369,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 429cf39bebc098c4c857a5d4a4e25f90, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AI_Capitalist.Economy.OfflineProgressManager
-  minimumSecondsForOfflineProgress: 60
+  minimumSecondsForOfflineProgress: 30
 --- !u!114 &1010257394
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -395,7 +397,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AI_Capitalist.UI.UIManager
   tierUIPrefab: {fileID: 385246904435947978, guid: 0f42e47287291b34cab07aa135df329f, type: 3}
-  uiContainer: {fileID: 0}
+  managerPopupPrefab: {fileID: 809264435797911845, guid: 2682aed919ed6924ebbad5daf61e9001, type: 3}
+  offlinePopupPrefab: {fileID: 7543252497401898603, guid: 92b52f2ddf2fbf744a2e8ed32f573421, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

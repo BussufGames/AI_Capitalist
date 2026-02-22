@@ -2,25 +2,28 @@
  * ----------------------------------------------------------------------------
  * Project: AI Capitalist
  * Author:  Bussuf Senior Dev
- * Date:    2023-10-28
+ * Date:    2023-10-29
  * ----------------------------------------------------------------------------
  * Description:
  * Generates the UI Prefabs for each Tier and links them to the Logic Controllers.
- * Waits for the Main Scene to load before searching for the UI_Container.
+ * Manages the Singleton ManagerPopupUI and dynamically spawns OfflinePopupUI.
  * ----------------------------------------------------------------------------
  * Change Log:
  * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
- * 2023-10-29 - Bussuf Senior Dev - Added SceneLoaded event to dynamically find 
- * UI_Container after transitioning to Main Scene.
+ * 2023-10-29 - Bussuf Senior Dev - Added SceneLoaded event to dynamically find container.
+ * 2023-10-29 - Bussuf Senior Dev - Added Manager Popup instantiation.
+ * 2023-10-29 - Bussuf Senior Dev - Updated OpenManagerPopup to pass VisualData.
+ * 2023-10-29 - Bussuf Senior Dev - Added instantiation of OfflinePopupUI on load.
  * ----------------------------------------------------------------------------
  */
 
-using AI_Capitalist.Core;
-using AI_Capitalist.Gameplay;
-using BussufGames.Core;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using AI_Capitalist.Core;
+using AI_Capitalist.Gameplay;
+using AI_Capitalist.Economy;
+using BussufGames.Core;
 
 namespace AI_Capitalist.UI
 {
@@ -30,7 +33,14 @@ namespace AI_Capitalist.UI
 		[Tooltip("The visual UI Prefab with TierUIView script.")]
 		[SerializeField] private GameObject tierUIPrefab;
 
+		[Tooltip("The Manager Popup Prefab.")]
+		[SerializeField] private GameObject managerPopupPrefab;
+
+		[Tooltip("The Welcome Back Offline Progress Popup Prefab.")]
+		[SerializeField] private GameObject offlinePopupPrefab;
+
 		private Transform _uiContainer;
+		private ManagerPopupUI _activeManagerPopup;
 		private TierManager _tierManager;
 		private Dictionary<int, TierVisualData> _visualDataDict = new Dictionary<int, TierVisualData>();
 
@@ -44,26 +54,15 @@ namespace AI_Capitalist.UI
 
 		public void Initialize()
 		{
-			this.Log("Initializing UIManager...");
-
 			_tierManager = CoreManager.Instance.GetService<TierManager>();
-			if (_tierManager == null)
+			if (_tierManager == null || tierUIPrefab == null || managerPopupPrefab == null || offlinePopupPrefab == null)
 			{
-				this.LogError("TierManager not found. UI cannot initialize.");
-				return;
-			}
-
-			if (tierUIPrefab == null)
-			{
-				this.LogError("TierUIPrefab is missing in UIManager!");
+				this.LogError("UIManager missing critical references (Check Prefabs in Inspector)!");
 				return;
 			}
 
 			LoadVisualData();
-
-			// Subscribe to the scene loaded event so we spawn UI ONLY when the canvas actually exists
 			SceneManager.sceneLoaded += OnSceneLoaded;
-			this.Log("UIManager ready. Waiting for Main Scene to load...");
 		}
 
 		private void OnDestroy()
@@ -73,7 +72,6 @@ namespace AI_Capitalist.UI
 
 		private void LoadVisualData()
 		{
-			// Load all ScriptableObjects from a Resources folder named "Visuals"
 			TierVisualData[] loadedData = Resources.LoadAll<TierVisualData>("Visuals");
 			foreach (var data in loadedData)
 			{
@@ -84,28 +82,22 @@ namespace AI_Capitalist.UI
 
 		private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
 		{
-			// Assuming Scene 1 is the Main Game Scene
 			if (scene.buildIndex == 1)
 			{
-				this.Log("Main Scene loaded. Spawning UI elements...");
 				SpawnUI();
 			}
 		}
 
 		private void SpawnUI()
 		{
-			// Dynamically find the container in the newly loaded scene
 			GameObject containerObj = GameObject.Find("UI_Container");
 			if (containerObj != null)
 			{
 				_uiContainer = containerObj.transform;
 			}
-			else
-			{
-				this.LogError("CRITICAL: Could not find 'UI_Container' in the scene! Make sure the object is named exactly 'UI_Container'.");
-				return;
-			}
+			else return;
 
+			// 1. Spawn Tier Rows
 			foreach (var controller in _tierManager.ActiveTiers)
 			{
 				GameObject uiObj = Instantiate(tierUIPrefab, _uiContainer);
@@ -117,13 +109,45 @@ namespace AI_Capitalist.UI
 					_visualDataDict.TryGetValue(controller.StaticData.TierID, out TierVisualData visualData);
 					uiView.Initialize(controller, visualData);
 				}
-				else
+			}
+
+			Canvas mainCanvas = Object.FindAnyObjectByType<Canvas>();
+			if (mainCanvas != null)
+			{
+				// 2. Spawn Global Manager Popup
+				GameObject popupObj = Instantiate(managerPopupPrefab, mainCanvas.transform);
+				popupObj.name = "Manager_Popup_UI";
+				popupObj.transform.SetAsLastSibling();
+
+				_activeManagerPopup = popupObj.GetComponent<ManagerPopupUI>();
+				_activeManagerPopup.gameObject.SetActive(false);
+
+				// 3. Spawn Offline Progress Popup (if applicable)
+				var offlineMgr = CoreManager.Instance.GetService<OfflineProgressManager>();
+				if (offlineMgr != null && offlineMgr.HasOfflineProgress)
 				{
-					this.LogError("TierUIPrefab is missing the TierUIView script!");
+					GameObject offlineObj = Instantiate(offlinePopupPrefab, mainCanvas.transform);
+					offlineObj.name = "Offline_Popup_UI";
+					offlineObj.transform.SetAsLastSibling(); // Ensure it's on top of everything
+
+					OfflinePopupUI offlineUI = offlineObj.GetComponent<OfflinePopupUI>();
+					if (offlineUI != null)
+					{
+						offlineUI.OpenPopup(offlineMgr.PendingTimeAway, offlineMgr.PendingOfflineEarnings);
+					}
 				}
 			}
 
-			this.LogSuccess("All Tier UIs spawned and connected to logic.");
+			this.LogSuccess("All UIs spawned successfully.");
+		}
+
+		public void OpenManagerPopup(TierController controller)
+		{
+			if (_activeManagerPopup != null)
+			{
+				_visualDataDict.TryGetValue(controller.StaticData.TierID, out TierVisualData visualData);
+				_activeManagerPopup.OpenPopup(controller, visualData);
+			}
 		}
 	}
 }

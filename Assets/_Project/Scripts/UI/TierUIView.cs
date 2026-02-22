@@ -2,17 +2,17 @@
  * ----------------------------------------------------------------------------
  * Project: AI Capitalist
  * Author:  Bussuf Senior Dev
- * Date:    2023-10-28
+ * Date:    2023-10-29
  * ----------------------------------------------------------------------------
  * Description:
- * The View layer for a single Tier. Dumb UI that only listens to events 
- * from the TierController and updates TextMeshPro/Images.
- * Uses DOTween for visual feedback (Juice).
+ * The View layer for a single Tier. 
+ * Updated to allow Icon clicks (to open Manager UI) and Debt Pay action.
  * ----------------------------------------------------------------------------
  * Change Log:
  * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
  * 2023-10-29 - Bussuf Senior Dev - Added Milestones, States, Multi-buy split text.
  * 2023-10-29 - Bussuf Senior Dev - Fixed DOComplete bug and connected Manual state lock.
+ * 2023-10-29 - Bussuf Senior Dev - Removed "MAX" text replacing it with true calculation UX.
  * ----------------------------------------------------------------------------
  */
 
@@ -37,7 +37,7 @@ namespace AI_Capitalist.UI
 		[SerializeField] private TMP_Text buyAmountText;
 		[SerializeField] private TMP_Text buyCostText;
 
-		[Header("UI Elements - Images")]
+		[Header("UI Elements - Images & Bars")]
 		[SerializeField] private Image iconImage;
 		[SerializeField] private Image progressBarFill;
 		[SerializeField] private Image milestoneBarFill;
@@ -46,6 +46,7 @@ namespace AI_Capitalist.UI
 		[Header("Buttons")]
 		[SerializeField] private Button actionButton;
 		[SerializeField] private Button buyButton;
+		[SerializeField] private Button iconButton;
 
 		private TierController _controller;
 		private TierVisualData _visualData;
@@ -57,6 +58,9 @@ namespace AI_Capitalist.UI
 
 			actionButton.onClick.AddListener(OnActionClicked);
 			buyButton.onClick.AddListener(OnBuyClicked);
+
+			if (iconButton != null)
+				iconButton.onClick.AddListener(OnIconClicked);
 		}
 
 		public void Initialize(TierController controller, TierVisualData visualData)
@@ -98,10 +102,7 @@ namespace AI_Capitalist.UI
 			if (Core.CoreManager.Instance != null)
 			{
 				var economy = Core.CoreManager.Instance.GetService<EconomyManager>();
-				if (economy != null)
-				{
-					economy.OnBuyModeChanged -= RefreshDisplay;
-				}
+				if (economy != null) economy.OnBuyModeChanged -= RefreshDisplay;
 			}
 		}
 
@@ -130,7 +131,8 @@ namespace AI_Capitalist.UI
 
 			BigDouble nextCost = economy.GetBuyCostAndAmount(_controller.StaticData.TierID, _controller.DynamicData.OwnedUnits, out int amountToBuy);
 
-			buyAmountText.text = economy.CurrentBuyMode == BuyMode.Max ? $"Buy MAX" : $"Buy {amountToBuy}";
+			// UX UPDATE: Always show the calculated amount, even in MAX mode!
+			buyAmountText.text = $"Buy {amountToBuy}";
 			buyCostText.text = $"${nextCost.ToCurrencyString()}";
 
 			RefreshBuyButtonInteractability();
@@ -152,36 +154,41 @@ namespace AI_Capitalist.UI
 			if (_controller.DynamicData.CurrentState == Data.ManagerState.AI)
 			{
 				actionButtonStateImage.sprite = _visualData.StateAIRunning;
-				actionButton.interactable = false;
 			}
 			else if (_controller.DynamicData.CurrentState == Data.ManagerState.Human)
 			{
 				if (_controller.IsHumanOnStrike())
 				{
 					actionButtonStateImage.sprite = _visualData.StateHumanStrike;
-					actionButton.interactable = true; // Click to pay debt
 				}
 				else
 				{
 					actionButtonStateImage.sprite = _visualData.StateHumanWorking;
-					actionButton.interactable = false;
 				}
 			}
 			else
 			{
 				actionButtonStateImage.sprite = _visualData.StateManual;
-				// Button is interactable only if we are NOT currently working
-				actionButton.interactable = !_controller.IsWorkingManually;
 			}
 		}
 
 		private void OnActionClicked()
 		{
-			// CRITICAL: DOComplete forces any running animation to finish instantly, preventing infinite scaling on spam clicks.
 			iconImage.transform.DOComplete();
 			iconImage.transform.DOPunchScale(Vector3.one * 0.2f, 0.2f, 10, 1);
 
-			_controller.ManualClick();
+			if (_controller.DynamicData.CurrentState == Data.ManagerState.AI) return;
+			if (_controller.DynamicData.CurrentState == Data.ManagerState.Human && !_controller.IsHumanOnStrike()) return;
+			if (_controller.DynamicData.CurrentState == Data.ManagerState.None && _controller.IsWorkingManually) return;
+
+			if (_controller.DynamicData.CurrentState == Data.ManagerState.Human && _controller.IsHumanOnStrike())
+			{
+				_controller.PayHumanDebt();
+			}
+			else
+			{
+				_controller.ManualClick();
+			}
 		}
 
 		private void OnBuyClicked()
@@ -190,6 +197,18 @@ namespace AI_Capitalist.UI
 			_rectTransform.DOPunchScale(Vector3.one * 0.05f, 0.2f, 10, 1);
 
 			_controller.BuyUnits();
+		}
+
+		private void OnIconClicked()
+		{
+			iconImage.transform.DOComplete();
+			iconImage.transform.DOPunchScale(Vector3.one * 0.1f, 0.2f, 10, 1);
+
+			var uiManager = Core.CoreManager.Instance.GetService<UIManager>();
+			if (uiManager != null)
+			{
+				uiManager.OpenManagerPopup(_controller);
+			}
 		}
 	}
 }
