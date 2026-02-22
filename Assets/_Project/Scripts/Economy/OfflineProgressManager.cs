@@ -6,15 +6,13 @@
  * ----------------------------------------------------------------------------
  * Description:
  * Calculates earnings while the application was closed.
- * Uses RoundtripKind parsing to perfectly avoid Timezone drift bugs.
- * Incorporates Manager States (Human strikes) and Global Milestones.
+ * Always calculates background progression to keep progress bars accurate.
+ * Only triggers the "Welcome Back" popup if >60s to prevent spam.
  * ----------------------------------------------------------------------------
  * Change Log:
  * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
- * 2023-10-28 - and Manager State offline calculations.
- * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
- * 2023-10-29 - Bussuf Senior Dev - Fixed UTC Timezone bug, added Milestone 
  * 2023-10-29 - Bussuf Senior Dev - Added pending properties for Offline UI Popup.
+ * 2023-10-29 - Bussuf Senior Dev - Implemented silent offline tracking for Manual mode.
  * ----------------------------------------------------------------------------
  */
 
@@ -29,12 +27,11 @@ namespace AI_Capitalist.Economy
 {
 	public class OfflineProgressManager : MonoBehaviour, IService
 	{
-		[Tooltip("Minimum seconds away before we care about calculating offline progress.")]
-		[SerializeField] private float minimumSecondsForOfflineProgress = 60f;
+		[Tooltip("Minimum seconds away before we show the Welcome Back UI popup.")]
+		[SerializeField] private float minimumSecondsForPopup = 60f;
 
 		private static readonly int[] MILESTONES = { 10, 25, 50, 100, 200, 300, 400, 500, 1000 };
 
-		// --- NEW: Public properties for the UI to read ---
 		public BigDouble PendingOfflineEarnings { get; private set; } = BigDouble.Zero;
 		public TimeSpan PendingTimeAway { get; private set; } = TimeSpan.Zero;
 		public bool HasOfflineProgress => PendingOfflineEarnings > BigDouble.Zero;
@@ -76,20 +73,34 @@ namespace AI_Capitalist.Economy
 			lastSaveTime = lastSaveTime.ToUniversalTime();
 			TimeSpan timeAway = DateTime.UtcNow - lastSaveTime;
 
-			if (timeAway.TotalSeconds < minimumSecondsForOfflineProgress) return;
-
 			BigDouble totalOfflineEarnings = BigDouble.Zero;
 
 			foreach (var tier in gameData.TiersData)
 			{
-				if (tier.OwnedUnits <= 0 || tier.CurrentState == ManagerState.None) continue;
+				if (tier.OwnedUnits <= 0) continue;
 
 				var staticConfig = _economyManager.GetTierConfig(tier.TierID);
 				if (staticConfig == null) continue;
 
 				BigDouble cycleRev = BigDouble.Parse(staticConfig.Base_Rev) * tier.OwnedUnits * GetMilestoneMultiplier(tier.OwnedUnits);
 
-				if (tier.CurrentState == ManagerState.AI)
+				if (tier.CurrentState == ManagerState.None)
+				{
+					// MANUAL MODE - It only runs if they clicked it before leaving!
+					if (tier.IsWorkingManually)
+					{
+						float actualCycleTime = staticConfig.Cycle_Time;
+						tier.CurrentCycleProgress += (float)timeAway.TotalSeconds;
+
+						if (tier.CurrentCycleProgress >= actualCycleTime)
+						{
+							totalOfflineEarnings += cycleRev;
+							tier.CurrentCycleProgress = 0f;
+							tier.IsWorkingManually = false;
+						}
+					}
+				}
+				else if (tier.CurrentState == ManagerState.AI)
 				{
 					float actualCycleTime = staticConfig.Cycle_Time / tier.CurrentAISpeedMulti;
 					double cyclesCompleted = timeAway.TotalSeconds / actualCycleTime;
@@ -119,15 +130,20 @@ namespace AI_Capitalist.Economy
 			{
 				_economyManager.AddIncome(totalOfflineEarnings);
 
-				// Store the result for the UI instead of just logging it
-				PendingOfflineEarnings = totalOfflineEarnings;
-				PendingTimeAway = timeAway;
-
-				this.LogSuccess($"<color=yellow>OFFLINE PROGRESS: Earned {totalOfflineEarnings.ToCurrencyString()}</color>");
+				// Only trigger the popup UI if they were away for long enough (e.g. 1 minute)
+				if (timeAway.TotalSeconds >= minimumSecondsForPopup)
+				{
+					PendingOfflineEarnings = totalOfflineEarnings;
+					PendingTimeAway = timeAway;
+					this.LogSuccess($"<color=yellow>OFFLINE PROGRESS UI SPAWNED: Earned {totalOfflineEarnings.ToCurrencyString()}</color>");
+				}
+				else
+				{
+					this.Log($"Silent offline calculation. Earned {totalOfflineEarnings.ToCurrencyString()} in {(int)timeAway.TotalSeconds}s.");
+				}
 			}
 		}
 
-		// Called by the UI once the player clicks "Awesome!" to clear the data
 		public void AcknowledgeOfflineProgress()
 		{
 			PendingOfflineEarnings = BigDouble.Zero;

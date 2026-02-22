@@ -6,13 +6,12 @@
  * ----------------------------------------------------------------------------
  * Description:
  * The View layer for a single Tier. 
- * Updated to allow Icon clicks (to open Manager UI) and Debt Pay action.
  * ----------------------------------------------------------------------------
  * Change Log:
  * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
  * 2023-10-29 - Bussuf Senior Dev - Added Milestones, States, Multi-buy split text.
- * 2023-10-29 - Bussuf Senior Dev - Fixed DOComplete bug and connected Manual state lock.
  * 2023-10-29 - Bussuf Senior Dev - Removed "MAX" text replacing it with true calculation UX.
+ * 2023-10-29 - Bussuf Senior Dev - Added initial progress bar sync to prevent full bar glitch.
  * ----------------------------------------------------------------------------
  */
 
@@ -89,6 +88,9 @@ namespace AI_Capitalist.UI
 			}
 
 			RefreshDisplay();
+
+			// FIX VISUAL GLITCH: Force sync the progress bar on load so it matches data
+			UpdateProgressBar(_controller.GetNormalizedProgress());
 		}
 
 		private void OnDestroy()
@@ -131,8 +133,7 @@ namespace AI_Capitalist.UI
 
 			BigDouble nextCost = economy.GetBuyCostAndAmount(_controller.StaticData.TierID, _controller.DynamicData.OwnedUnits, out int amountToBuy);
 
-			// UX UPDATE: Always show the calculated amount, even in MAX mode!
-			buyAmountText.text = $"Buy {amountToBuy}";
+			buyAmountText.text = economy.CurrentBuyMode == BuyMode.Max ? $"Buy {amountToBuy}" : $"Buy {amountToBuy}";
 			buyCostText.text = $"${nextCost.ToCurrencyString()}";
 
 			RefreshBuyButtonInteractability();

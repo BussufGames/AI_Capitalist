@@ -10,6 +10,7 @@
  * Change Log:
  * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
  * 2023-10-29 - Bussuf Senior Dev - Added JsonProperty attributes to fix deserialization.
+ * 2023-10-29 - Bussuf Senior Dev - Added IsWorkingManually to persistent TierDynamicData.
  * ----------------------------------------------------------------------------
  */
 
@@ -50,6 +51,9 @@ namespace AI_Capitalist.Data
 
 		[JsonProperty]
 		public ManagerState CurrentState { get; set; } = ManagerState.None;
+
+		[JsonProperty]
+		public bool IsWorkingManually { get; set; } = false;
 
 		[JsonProperty]
 		public float CurrentCycleProgress { get; set; } = 0f;

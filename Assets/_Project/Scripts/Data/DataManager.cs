@@ -6,15 +6,17 @@
  * ----------------------------------------------------------------------------
  * Description:
  * Orchestrates the 'Local First, Cloud Second' save data architecture.
- * Serializes the game state using Newtonsoft.Json.
+ * Safely compares Cloud timestamps before applying, preventing Reference Loss.
  * ----------------------------------------------------------------------------
  * Change Log:
  * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
  * 2023-10-29 - Bussuf Senior Dev - Added Auto-Save and ApplicationQuit hooks.
  * 2023-10-29 - Bussuf Senior Dev - Exposed autoSaveInterval, added Cloud Save throttling.
- * 2023-10-29 - Bussuf Senior Dev - Compare cloud and locat data before loading.
+ * 2023-10-29 - Bussuf Senior Dev - Added Timestamp comparison to avoid Lost Reference bug.
+ * 2023-10-29 - Bussuf Senior Dev - Added initialBalance parameter for fresh saves.
  * ----------------------------------------------------------------------------
  */
+
 using AI_Capitalist.Core;
 using AI_Capitalist.Services;
 using BussufGames.Core;
@@ -33,6 +35,10 @@ namespace AI_Capitalist.Data
 
 		[Tooltip("Minimum seconds between cloud saves to prevent Rate Limiting by UGS.")]
 		[SerializeField] private float cloudSaveThrottle = 5f;
+
+		[Header("Economy Settings")]
+		[Tooltip("Starting balance for a completely fresh save (string to support BigDouble).")]
+		[SerializeField] private string initialBalance = "0";
 
 		private const string SAVE_KEY = "ai_cap_save_v1";
 		public PlayerSaveData GameData { get; private set; }
@@ -57,9 +63,9 @@ namespace AI_Capitalist.Data
 			{
 				this.LogWarning("No local save found. Creating new player profile.");
 				GameData = new PlayerSaveData();
+				GameData.CurrentBalance = initialBalance; // Set custom initial balance!
 				GameData.LastSaveTime = DateTime.UtcNow.ToString("O");
 
-				// Force an immediate local save so it has a valid local timestamp
 				SaveLocalOnly();
 			}
 
@@ -74,9 +80,6 @@ namespace AI_Capitalist.Data
 
 			GameData.LastSaveTime = DateTime.UtcNow.ToString("O");
 			string json = JsonConvert.SerializeObject(GameData, Formatting.None);
-
-			// Print to console to easily verify stats!
-			// this.Log($"<color=orange>SAVE FILE JSON:</color> {json}");
 
 			PlayerPrefs.SetString(SAVE_KEY, json);
 			PlayerPrefs.Save();
@@ -136,18 +139,14 @@ namespace AI_Capitalist.Data
 							DateTime.TryParse(GameData.LastSaveTime, null, System.Globalization.DateTimeStyles.RoundtripKind, out localTime);
 						}
 
-						// If the Cloud save is STRICTLY newer than local, we apply it.
 						if (cloudTime > localTime)
 						{
 							this.LogWarning("Newer Cloud Save detected! Updating local and rebooting...");
 							GameData = cloudData;
 
-							// Bypass throttle to force save the new truth
 							_lastCloudSaveTime = 0f;
 							SaveGame();
 
-							// We MUST destroy the CoreManager and reload Scene 0 
-							// to ensure all TierControllers bind to the NEW GameData reference!
 							if (CoreManager.Instance != null) Destroy(CoreManager.Instance.gameObject);
 							SceneManager.LoadScene(0);
 						}

@@ -35,11 +35,8 @@ namespace AI_Capitalist.DevTools
 		[SerializeField] private Button addMoneyButton;
 		[SerializeField] private Button resetSaveButton;
 
-		[SerializeField] private BigDouble startingCash = 100;
-
 		private void Start()
 		{
-			CoreManager.Instance.GetService<EconomyManager>().AddIncome(startingCash);
 
 			if (addMoneyButton != null)
 				addMoneyButton.onClick.AddListener(GiveMoneyCheat);

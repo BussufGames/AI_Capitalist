@@ -321,6 +321,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AI_Capitalist.Data.DataManager
   autoSaveInterval: 5
   cloudSaveThrottle: 45
+  initialBalance: 500
 --- !u!114 &1010257390
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -369,7 +370,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 429cf39bebc098c4c857a5d4a4e25f90, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AI_Capitalist.Economy.OfflineProgressManager
-  minimumSecondsForOfflineProgress: 30
+  minimumSecondsForPopup: 60
 --- !u!114 &1010257394
 MonoBehaviour:
   m_ObjectHideFlags: 0

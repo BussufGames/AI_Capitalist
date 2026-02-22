@@ -13,7 +13,7 @@
  * 2023-10-29 - Bussuf Senior Dev - Added Global Milestones & Multi-buy logic.
  * 2023-10-29 - Bussuf Senior Dev - Converted ManualClick to time-based progress.
  * 2023-10-29 - Bussuf Senior Dev - Added HireHuman, HireAI, and PayDebt logic.
- * 2023-10-29 - Bussuf Senior Dev - Ensured ManualClick triggers a SaveGame event.
+ * 2023-10-29 - Bussuf Senior Dev - Linked IsWorkingManually to persistent DynamicData.
  * ----------------------------------------------------------------------------
  */
 
@@ -35,8 +35,10 @@ namespace AI_Capitalist.Gameplay
 
 		public TierDynamicData DynamicData { get; private set; }
 		public TierStaticData StaticData { get; private set; }
-		public bool IsWorkingManually { get; private set; }
 		public bool IsInitialized { get; private set; }
+
+		// Proxy to the persistent saved data
+		public bool IsWorkingManually => DynamicData != null && DynamicData.IsWorkingManually;
 
 		private EconomyManager _economyManager;
 		private DataManager _dataManager;
@@ -78,7 +80,7 @@ namespace AI_Capitalist.Gameplay
 			float actualCycleTime = StaticData.Cycle_Time / speedMultiplier;
 			DynamicData.CurrentCycleProgress += Time.deltaTime;
 
-			OnProgressUpdated?.Invoke(Mathf.Clamp01(DynamicData.CurrentCycleProgress / actualCycleTime));
+			OnProgressUpdated?.Invoke(GetNormalizedProgress());
 
 			if (DynamicData.CurrentCycleProgress >= actualCycleTime)
 			{
@@ -87,14 +89,14 @@ namespace AI_Capitalist.Gameplay
 				if (isManual)
 				{
 					DynamicData.CurrentCycleProgress = 0f;
-					IsWorkingManually = false;
+					DynamicData.IsWorkingManually = false;
 				}
 				else
 				{
 					DynamicData.CurrentCycleProgress -= actualCycleTime;
 				}
 
-				OnProgressUpdated?.Invoke(Mathf.Clamp01(DynamicData.CurrentCycleProgress / actualCycleTime));
+				OnProgressUpdated?.Invoke(GetNormalizedProgress());
 				OnDataChanged?.Invoke();
 			}
 		}
@@ -163,14 +165,24 @@ namespace AI_Capitalist.Gameplay
 			return Mathf.Clamp01(currentProgress / requiredForNext);
 		}
 
+		public float GetNormalizedProgress()
+		{
+			float speedMultiplier = 1f;
+			if (DynamicData.CurrentState == ManagerState.AI) speedMultiplier = DynamicData.CurrentAISpeedMulti;
+			else if (DynamicData.CurrentState == ManagerState.Human) speedMultiplier = DynamicData.CurrentHumanSpeedMulti;
+
+			float actualCycleTime = StaticData.Cycle_Time / speedMultiplier;
+			return Mathf.Clamp01(DynamicData.CurrentCycleProgress / actualCycleTime);
+		}
+
 		// --- PUBLIC ACTIONS ---
 
 		public void ManualClick()
 		{
 			if (DynamicData.CurrentState != ManagerState.None || IsWorkingManually) return;
 
-			IsWorkingManually = true;
-			_dataManager.SaveGame(); // Forces a local save immediately on click
+			DynamicData.IsWorkingManually = true;
+			_dataManager.SaveGame();
 			OnDataChanged?.Invoke();
 		}
 
@@ -208,7 +220,7 @@ namespace AI_Capitalist.Gameplay
 			{
 				DynamicData.CurrentState = ManagerState.AI;
 				DynamicData.AccumulatedDebt = "0";
-				IsWorkingManually = false;
+				DynamicData.IsWorkingManually = false;
 
 				_dataManager.SaveGame();
 				OnDataChanged?.Invoke();

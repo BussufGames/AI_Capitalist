@@ -5,7 +5,7 @@
       "BusinessName": "Lemonade Stand",
       "Base_Cost": "10",
       "Growth_Factor": 1.07,
-      "Base_Rev": "1",
+      "Base_Rev": "1000",
       "Cycle_Time": 2.0,
       "Human_Hire_Cost": "100",
       "Base_Human_Salary_Per_Cycle": "0.5",
@@ -17,7 +17,7 @@
       "Base_Cost": "60",
       "Growth_Factor": 1.15,
       "Base_Rev": "60",
-      "Cycle_Time": 3.0,
+      "Cycle_Time": 60.0,
       "Human_Hire_Cost": "500",
       "Base_Human_Salary_Per_Cycle": "10",
       "AI_Hire_Cost": "5000"
