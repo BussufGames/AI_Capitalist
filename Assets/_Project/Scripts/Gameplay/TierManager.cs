@@ -98,6 +98,12 @@ namespace AI_Capitalist.Gameplay
 			}
 
 			TierDynamicData newData = new TierDynamicData(tierID);
+
+			if (tierID == 1)
+			{
+				newData.OwnedUnits = 1;
+			}
+
 			savedTiers.Add(newData);
 			_dataManager.SaveGame();
 			return newData;
