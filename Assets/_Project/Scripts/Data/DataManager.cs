@@ -87,7 +87,7 @@ namespace AI_Capitalist.Data
 			if (Time.unscaledTime - _lastCloudSaveTime >= cloudSaveThrottle)
 			{
 				_lastCloudSaveTime = Time.unscaledTime;
-				var ugs = CoreManager.Instance.GetService<UGSManager>();
+				UGSManager ugs = CoreManager.Instance.GetService<UGSManager>();
 				if (ugs != null && ugs.IsAuthenticated)
 				{
 					_ = ugs.SaveCloudDataAsync(SAVE_KEY, json);

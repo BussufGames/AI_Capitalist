@@ -2,14 +2,14 @@
  * ----------------------------------------------------------------------------
  * Project: AI Capitalist
  * Author:  Bussuf Senior Dev
- * Date:    2023-10-28
+ * Date:    2023-10-31
  * ----------------------------------------------------------------------------
  * Description:
- * Handles Unity Gaming Services (UGS) initialization, Anonymous Auth, 
- * and Cloud Save push/pull operations.
+ * Handles Unity Gaming Services initialization, Authentication, and Cloud Save.
  * ----------------------------------------------------------------------------
  * Change Log:
  * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
+ * 2023-10-31 - Bussuf Senior Dev - Added check to prevent 'Already Signed In' error on soft reboots.
  * ----------------------------------------------------------------------------
  */
 
@@ -27,11 +27,11 @@ namespace AI_Capitalist.Services
 {
 	public class UGSManager : MonoBehaviour, Core.IService
 	{
-		public bool IsAuthenticated => AuthenticationService.Instance != null && AuthenticationService.Instance.IsSignedIn;
+		public bool IsAuthenticated { get; private set; }
+		public string PlayerID { get; private set; }
 
 		private void Awake()
 		{
-			// Register this service to the Locator
 			if (CoreManager.Instance != null)
 			{
 				CoreManager.Instance.RegisterService<UGSManager>(this);
@@ -40,61 +40,81 @@ namespace AI_Capitalist.Services
 
 		public async void Initialize()
 		{
+			this.Log("Initializing Unity Gaming Services...");
 			try
 			{
-				this.Log("Initializing Unity Gaming Services...");
 				await UnityServices.InitializeAsync();
-				await SignInAnonymouslyAsync();
+				SignInAnonymouslyAsync();
 			}
 			catch (Exception e)
 			{
-				this.LogError($"UGS Initialization Failed (Offline Mode?): {e.Message}");
+				this.LogError($"Failed to initialize UGS: {e.Message}");
 			}
 		}
 
-		private async Task SignInAnonymouslyAsync()
+		private async void SignInAnonymouslyAsync()
 		{
 			try
 			{
+				// FIX: Check if we are ALREADY signed in (happens when reloading Scene 0 in the Editor)
+				if (AuthenticationService.Instance.IsSignedIn)
+				{
+					PlayerID = AuthenticationService.Instance.PlayerId;
+					IsAuthenticated = true;
+					this.LogSuccess($"Already signed in automatically. PlayerID: {PlayerID}");
+					return;
+				}
+
 				await AuthenticationService.Instance.SignInAnonymouslyAsync();
-				this.LogSuccess($"Signed in anonymously. PlayerID: {AuthenticationService.Instance.PlayerId}");
+				PlayerID = AuthenticationService.Instance.PlayerId;
+				IsAuthenticated = true;
+				this.LogSuccess($"Signed in anonymously. PlayerID: {PlayerID}");
 			}
-			catch (Exception e)
+			catch (AuthenticationException ex)
 			{
-				this.LogError($"Sign in failed: {e.Message}");
+				this.LogError($"Sign in failed: {ex.Message}");
+			}
+			catch (RequestFailedException ex)
+			{
+				this.LogError($"Sign in failed: {ex.Message}");
 			}
 		}
 
 		public async Task<string> LoadCloudDataAsync(string key)
 		{
-			if (!IsAuthenticated) return null;
+			if (!IsAuthenticated) return string.Empty;
+
 			try
 			{
-				var query = await CloudSaveService.Instance.Data.Player.LoadAsync(new HashSet<string> { key });
-				if (query.TryGetValue(key, out var item))
+				var query = new HashSet<string> { key };
+				var data = await CloudSaveService.Instance.Data.Player.LoadAsync(query);
+
+				if (data.TryGetValue(key, out var item))
 				{
 					return item.Value.GetAsString();
 				}
 			}
 			catch (Exception e)
 			{
-				this.LogError($"Cloud Load Failed: {e.Message}");
+				this.LogError($"Error loading from cloud: {e.Message}");
 			}
-			return null;
+
+			return string.Empty;
 		}
 
-		public async Task SaveCloudDataAsync(string key, string json)
+		public async Task SaveCloudDataAsync(string key, string jsonValue)
 		{
 			if (!IsAuthenticated) return;
+
 			try
 			{
-				var data = new Dictionary<string, object> { { key, json } };
+				var data = new Dictionary<string, object> { { key, jsonValue } };
 				await CloudSaveService.Instance.Data.Player.SaveAsync(data);
 				this.LogSuccess("Data successfully synced to UGS Cloud.");
 			}
 			catch (Exception e)
 			{
-				this.LogError($"Cloud Save Failed: {e.Message}");
+				this.LogError($"Error saving to cloud: {e.Message}");
 			}
 		}
 	}
