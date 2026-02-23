@@ -2,16 +2,14 @@
  * ----------------------------------------------------------------------------
  * Project: AI Capitalist
  * Author:  Bussuf Senior Dev
- * Date:    2023-10-28
+ * Date:    2023-10-30
  * ----------------------------------------------------------------------------
  * Description:
- * The Core Economy Engine. Holds the Master JSON table in memory, 
- * handles BigDouble conversions, and manages the primary game balance.
- * Includes Geometric Series math for multi-purchases (x1, x10, x100, MAX).
+ * The Core Economy Engine. Holds the Master JSON table in memory.
  * ----------------------------------------------------------------------------
  * Change Log:
- * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
- * 2023-10-29 - Bussuf Senior Dev - Added BuyMode (x1,x10,x100,Max) & Geometric series cost math.
+ * 2023-10-30 - Bussuf Senior Dev - Added TryGetTierConfig for safe EOC checking.
+ * 2023-10-31 - Bussuf Senior Dev - Added SetBalance function for non-destructive dev testing.
  * ----------------------------------------------------------------------------
  */
 
@@ -54,7 +52,7 @@ namespace AI_Capitalist.Economy
 			_dataManager = CoreManager.Instance.GetService<DataManager>();
 			if (_dataManager == null)
 			{
-				this.LogError("DataManager is missing! Economy cannot initialize properly.");
+				this.LogError("DataManager is missing!");
 				return;
 			}
 
@@ -73,7 +71,6 @@ namespace AI_Capitalist.Economy
 				_ => BuyMode.x1
 			};
 
-			this.Log($"Buy Mode changed to: {CurrentBuyMode}");
 			OnBuyModeChanged?.Invoke();
 		}
 
@@ -99,19 +96,22 @@ namespace AI_Capitalist.Economy
 		{
 			string savedBalance = _dataManager.GameData.CurrentBalance;
 			CurrentBalance = BigDouble.Parse(savedBalance);
-			this.Log($"Player starting balance: {CurrentBalance.ToCurrencyString()}");
-
 			OnBalanceChanged?.Invoke(CurrentBalance);
 		}
 
+		// Standard getter (Logs an error if missing)
 		public TierStaticData GetTierConfig(int tierID)
 		{
-			if (_masterTable.TryGetValue(tierID, out var data))
-			{
-				return data;
-			}
+			if (_masterTable.TryGetValue(tierID, out var data)) return data;
+
 			this.LogError($"Requested config for unknown Tier ID: {tierID}");
 			return null;
+		}
+
+		// Safe getter for checking if a tier exists (Used for progression/EOC)
+		public bool TryGetTierConfig(int tierID, out TierStaticData data)
+		{
+			return _masterTable.TryGetValue(tierID, out data);
 		}
 
 		public void AddIncome(BigDouble amount)
@@ -131,40 +131,39 @@ namespace AI_Capitalist.Economy
 			return false;
 		}
 
-		/// <summary>
-		/// Calculates the cost and actual amount of units to buy based on the current BuyMode.
-		/// Uses the Geometric Series formula for rapid O(1) calculation.
-		/// </summary>
+		// DEV TOOL: Non-destructive balance reset
+		public void SetBalance(BigDouble newBalance)
+		{
+			CurrentBalance = newBalance;
+			UpdateSaveData();
+		}
+
 		public BigDouble GetBuyCostAndAmount(int tierID, int currentOwnedUnits, out int amountToBuy)
 		{
 			amountToBuy = 0;
-			var config = GetTierConfig(tierID);
-			if (config == null) return BigDouble.Zero;
+			if (!TryGetTierConfig(tierID, out var config)) return BigDouble.Zero;
 
 			BigDouble baseCost = BigDouble.Parse(config.Base_Cost);
 			double r = config.Growth_Factor;
-			BigDouble a = baseCost * BigDouble.Pow(r, currentOwnedUnits); // Cost of the immediate next unit
+			BigDouble a = baseCost * BigDouble.Pow(r, currentOwnedUnits);
 
 			if (CurrentBuyMode == BuyMode.Max)
 			{
 				if (CurrentBalance < a)
 				{
-					amountToBuy = 1; // Show cost of 1 even if can't afford
+					amountToBuy = 1;
 					return a;
 				}
 
-				// Max formula: n = floor( log_r( (Balance * (r-1) / a) + 1 ) )
 				BigDouble rhs = (CurrentBalance * (r - 1.0) / a) + 1.0;
 				double n = BigDouble.Log10(rhs) / Math.Log10(r);
 				amountToBuy = (int)Math.Floor(n);
 
-				// Return total cost for 'amountToBuy' units
 				return a * (BigDouble.Pow(r, amountToBuy) - 1.0) / (r - 1.0);
 			}
 			else
 			{
 				amountToBuy = (int)CurrentBuyMode;
-				// Sum formula: a * (r^n - 1) / (r - 1)
 				return a * (BigDouble.Pow(r, amountToBuy) - 1.0) / (r - 1.0);
 			}
 		}

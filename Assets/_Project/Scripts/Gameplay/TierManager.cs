@@ -2,20 +2,22 @@
  * ----------------------------------------------------------------------------
  * Project: AI Capitalist
  * Author:  Bussuf Senior Dev
- * Date:    2023-10-28
- * ----------------------------------------------------------------------------
- * Description:
- * Dynamically spawns and initializes TierControllers based on the Economy JSON.
+ * Date:    2023-10-30
  * ----------------------------------------------------------------------------
  * Change Log:
  * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
+ * 2023-10-30 - Bussuf Senior Dev - Refactored to only spawn Unlocked tiers.
+ * Added UnlockNextTier logic and OnTierUnlocked event.
+ * 2023-10-31 - Bussuf Senior Dev - Unlocked tiers now start at Level 1 & begin work immediately.
  * ----------------------------------------------------------------------------
  */
 
 using AI_Capitalist.Core;
 using AI_Capitalist.Data;
 using AI_Capitalist.Economy;
+using BreakInfinity;
 using BussufGames.Core;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -23,16 +25,13 @@ namespace AI_Capitalist.Gameplay
 {
 	public class TierManager : MonoBehaviour, IService
 	{
-		[Header("References")]
-		[Tooltip("The generic Prefab that contains the TierController script.")]
-		[SerializeField] private GameObject tierPrefab;
-		[Tooltip("The parent transform in the UI where tiers will be spawned.")]
-		[SerializeField] private Transform tierContainer;
+		public List<TierController> ActiveTiers { get; private set; } = new List<TierController>();
+
+		// Fired when a new tier is purchased, sending the NEW controller to the UI.
+		public event Action<TierController> OnTierUnlocked;
 
 		private DataManager _dataManager;
 		private EconomyManager _economyManager;
-
-		public List<TierController> ActiveTiers { get; private set; } = new List<TierController>();
 
 		private void Awake()
 		{
@@ -49,56 +48,95 @@ namespace AI_Capitalist.Gameplay
 			_dataManager = CoreManager.Instance.GetService<DataManager>();
 			_economyManager = CoreManager.Instance.GetService<EconomyManager>();
 
-			if (tierPrefab == null || tierContainer == null)
+			if (_dataManager == null || _economyManager == null)
 			{
-				this.LogError("TierPrefab or TierContainer is missing! Cannot spawn tiers.");
+				this.LogError("Missing Core Services. TierManager cannot initialize.");
 				return;
 			}
 
-			SpawnTiers();
+			SpawnUnlockedTiers();
 		}
 
-		private void SpawnTiers()
+		private void SpawnUnlockedTiers()
 		{
-			// In a real scenario, EconomyManager should expose the list of all static data.
-			// For now, we assume we know there are 2 tiers based on our JSON test.
-			// (We will add a method to EconomyManager to fetch all later).
+			int highestUnlocked = _dataManager.GameData.HighestUnlockedTier;
 
-			// Temporary hack for MVP to iterate known Tiers
-			for (int i = 1; i <= 2; i++)
+			// Spawn only up to the highest unlocked tier
+			for (int i = 1; i <= highestUnlocked; i++)
 			{
-				TierStaticData staticData = _economyManager.GetTierConfig(i);
-				if (staticData == null) continue;
-
-				TierDynamicData dynamicData = GetOrCreateDynamicData(i);
-
-				GameObject tierObj = Instantiate(tierPrefab, tierContainer);
-				tierObj.name = $"Tier_{i}_{staticData.BusinessName}";
-
-				TierController controller = tierObj.GetComponent<TierController>();
-				if (controller != null)
+				if (_economyManager.TryGetTierConfig(i, out TierStaticData staticData))
 				{
-					controller.Initialize(dynamicData, staticData);
-					ActiveTiers.Add(controller);
-				}
-				else
-				{
-					this.LogError($"TierPrefab is missing the TierController script!");
+					SpawnSingleTierLogic(staticData);
 				}
 			}
 
-			this.LogSuccess($"Successfully spawned {ActiveTiers.Count} Tiers.");
+			this.LogSuccess($"Successfully loaded {ActiveTiers.Count} Unlocked Tiers.");
+		}
+
+		private TierController SpawnSingleTierLogic(TierStaticData staticData)
+		{
+			GameObject tierObj = new GameObject($"Tier_{staticData.TierID}_{staticData.BusinessName}");
+			tierObj.transform.SetParent(this.transform);
+
+			TierController controller = tierObj.AddComponent<TierController>();
+			TierDynamicData dynamicData = GetOrCreateDynamicData(staticData.TierID);
+
+			controller.Initialize(dynamicData, staticData);
+			ActiveTiers.Add(controller);
+
+			return controller;
 		}
 
 		private TierDynamicData GetOrCreateDynamicData(int tierID)
 		{
-			var existing = _dataManager.GameData.TiersData.Find(t => t.TierID == tierID);
-			if (existing != null) return existing;
+			var savedTiers = _dataManager.GameData.TiersData;
+			var existingData = savedTiers.Find(t => t.TierID == tierID);
 
-			// If it doesn't exist in the save (new game), create it
-			var newData = new TierDynamicData(tierID);
-			_dataManager.GameData.TiersData.Add(newData);
+			if (existingData != null)
+			{
+				return existingData;
+			}
+
+			TierDynamicData newData = new TierDynamicData(tierID);
+			savedTiers.Add(newData);
+			_dataManager.SaveGame();
 			return newData;
+		}
+
+		public bool TryUnlockNextTier()
+		{
+			int nextTierID = _dataManager.GameData.HighestUnlockedTier + 1;
+
+			if (!_economyManager.TryGetTierConfig(nextTierID, out TierStaticData nextConfig))
+			{
+				this.Log("No more tiers to unlock!");
+				return false;
+			}
+
+			BigDouble unlockCost = BigDouble.Parse(nextConfig.Unlock_Cost);
+
+			if (_economyManager.TrySpend(unlockCost))
+			{
+				// Update Save Data
+				_dataManager.GameData.HighestUnlockedTier = nextTierID;
+
+				// Spawn the logic controller
+				TierController newController = SpawnSingleTierLogic(nextConfig);
+
+				// MODIFICATION: Start at Level 1 and begin work immediately!
+				newController.DynamicData.OwnedUnits = 1;
+				newController.DynamicData.IsWorkingManually = true;
+
+				_dataManager.SaveGame();
+
+				this.LogSuccess($"Unlocked Tier {nextTierID}!");
+
+				// Tell the UI to animate and draw it!
+				OnTierUnlocked?.Invoke(newController);
+				return true;
+			}
+
+			return false;
 		}
 	}
 }

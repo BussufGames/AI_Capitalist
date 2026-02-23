@@ -4,24 +4,23 @@
  * Author:  Bussuf Senior Dev
  * Date:    2023-10-28
  * ----------------------------------------------------------------------------
- * Description:
- * POCO classes representing the Master Economy Table (Google Sheets).
- * Designed to be deserialized from a remote or local JSON file.
- * ----------------------------------------------------------------------------
  * Change Log:
- * 2023-10-28 - Bussuf Senior Dev - Initial implementation based on GDD Appendix A.
+ * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
+ * 2023-10-30 - Bussuf Senior Dev - Added Unlock_Cost for dynamic progression.
  * ----------------------------------------------------------------------------
  */
 
+using System;
 using System.Collections.Generic;
 
 namespace AI_Capitalist.Economy
 {
-	[System.Serializable]
+	[Serializable]
 	public class TierStaticData
 	{
 		public int TierID;
 		public string BusinessName;
+		public string Unlock_Cost; // NEW: The cost to reveal this tier
 		public string Base_Cost;
 		public double Growth_Factor;
 		public string Base_Rev;
@@ -31,7 +30,7 @@ namespace AI_Capitalist.Economy
 		public string AI_Hire_Cost;
 	}
 
-	[System.Serializable]
+	[Serializable]
 	public class MasterEconomyTable
 	{
 		public List<TierStaticData> Tiers;

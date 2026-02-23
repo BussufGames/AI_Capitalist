@@ -9,10 +9,8 @@
  * Properly wipes local/cloud saves and safely reboots the application.
  * ----------------------------------------------------------------------------
  * Change Log:
- * 2023-10-29 - Bussuf Senior Dev - Initial implementation.
- * 2023-10-29 - Bussuf Senior Dev - Fixed ResetSave logic to destroy CoreManager safely.
- * 2023-10-29 - Bussuf Senior Dev - Reset save also reset save on the cloud now.
  * 2023-10-29 - Bussuf Senior Dev - Added Task.Delay to fix Scene Load collision.
+ * 2023-10-31 - Bussuf Senior Dev - Expanded cheat buttons (+1K, +1B, +1T, 0 Funds).
  * ----------------------------------------------------------------------------
  */
 
@@ -31,27 +29,44 @@ namespace AI_Capitalist.DevTools
 {
 	public class DevCheatMenu : MonoBehaviour
 	{
-		[Header("Cheat Buttons")]
-		[SerializeField] private Button addMoneyButton;
+		[Header("Money Cheats")]
+		[SerializeField] private Button add1KButton;
+		[SerializeField] private Button add1MButton; // Keep for existing inspector links if any
+		[SerializeField] private Button add1BButton;
+		[SerializeField] private Button add1TButton;
+		[SerializeField] private Button zeroFundsButton;
+
+		[Header("Save Management")]
 		[SerializeField] private Button resetSaveButton;
 
 		private void Start()
 		{
+			if (add1KButton != null) add1KButton.onClick.AddListener(() => GiveMoneyCheat(1000));
+			if (add1MButton != null) add1MButton.onClick.AddListener(() => GiveMoneyCheat(1000000));
+			if (add1BButton != null) add1BButton.onClick.AddListener(() => GiveMoneyCheat(1000000000));
+			if (add1TButton != null) add1TButton.onClick.AddListener(() => GiveMoneyCheat(1000000000000));
 
-			if (addMoneyButton != null)
-				addMoneyButton.onClick.AddListener(GiveMoneyCheat);
-
-			if (resetSaveButton != null)
-				resetSaveButton.onClick.AddListener(ResetSaveCheat);
+			if (zeroFundsButton != null) zeroFundsButton.onClick.AddListener(ZeroFundsCheat);
+			if (resetSaveButton != null) resetSaveButton.onClick.AddListener(ResetSaveCheat);
 		}
 
-		private void GiveMoneyCheat()
+		private void GiveMoneyCheat(double amount)
 		{
 			var economy = CoreManager.Instance.GetService<EconomyManager>();
 			if (economy != null)
 			{
-				economy.AddIncome(new BigDouble(1000000));
-				this.LogWarning("CHEAT USED: +$1,000,000 added to balance.");
+				economy.AddIncome(new BigDouble(amount));
+				this.LogWarning($"CHEAT USED: +${amount:N0} added to balance.");
+			}
+		}
+
+		private void ZeroFundsCheat()
+		{
+			var economy = CoreManager.Instance.GetService<EconomyManager>();
+			if (economy != null)
+			{
+				economy.SetBalance(BigDouble.Zero);
+				this.LogWarning("CHEAT USED: Balance reset to $0.");
 			}
 		}
 
@@ -76,11 +91,10 @@ namespace AI_Capitalist.DevTools
 				Destroy(CoreManager.Instance.gameObject);
 			}
 
-			// CRITICAL FIX: Wait for Unity to finish destroying the CoreManager at the end of the frame
-			// before we load Scene 0. This prevents the "Duplicate CoreManager" collision bug.
+			// 4. Wait for Unity to finish destroying the CoreManager at the end of the frame
 			await System.Threading.Tasks.Task.Delay(150);
 
-			// 4. Reload Bootstrap Scene
+			// 5. Reload Bootstrap Scene
 			SceneManager.LoadScene(0);
 		}
 	}

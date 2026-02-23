@@ -2,25 +2,111 @@
   "Tiers": [
     {
       "TierID": 1,
-      "BusinessName": "CAPTCHA Solver",
-      "Base_Cost": "10",
+      "BusinessName": "Captcha Solver",
+      "Unlock_Cost": "4",
+      "Base_Cost": "4",
       "Growth_Factor": 1.07,
       "Base_Rev": "1",
-      "Cycle_Time": 2.0,
+      "Cycle_Time": 0.6,
       "Human_Hire_Cost": "100",
-      "Base_Human_Salary_Per_Cycle": "0.5",
+      "Base_Human_Salary_Per_Cycle": "1",
       "AI_Hire_Cost": "1000"
     },
     {
       "TierID": 2,
-      "BusinessName": "Newspaper Delivery",
+      "BusinessName": "Customer Support",
+      "Unlock_Cost": "60",
       "Base_Cost": "60",
-      "Growth_Factor": 1.15,
-      "Base_Rev": "60",
+      "Growth_Factor": 1.07,
+      "Base_Rev": "20",
       "Cycle_Time": 3.0,
       "Human_Hire_Cost": "500",
       "Base_Human_Salary_Per_Cycle": "10",
       "AI_Hire_Cost": "5000"
+    },
+    {
+      "TierID": 3,
+      "BusinessName": "Art Generator",
+      "Unlock_Cost": "720",
+      "Base_Cost": "720",
+      "Growth_Factor": 1.07,
+      "Base_Rev": "90",
+      "Cycle_Time": 6.0,
+      "Human_Hire_Cost": "2500",
+      "Base_Human_Salary_Per_Cycle": "40",
+      "AI_Hire_Cost": "25000"
+    },
+    {
+      "TierID": 4,
+      "BusinessName": "Ad Profiling",
+      "Unlock_Cost": "8640",
+      "Base_Cost": "8640",
+      "Growth_Factor": 1.10,
+      "Base_Rev": "360",
+      "Cycle_Time": 12.0,
+      "Human_Hire_Cost": "10000",
+      "Base_Human_Salary_Per_Cycle": "160",
+      "AI_Hire_Cost": "100000"
+    },
+    {
+      "TierID": 5,
+      "BusinessName": "High-Frequency Trading",
+      "Unlock_Cost": "103680",
+      "Base_Cost": "103680",
+      "Growth_Factor": 1.10,
+      "Base_Rev": "2160",
+      "Cycle_Time": 24.0,
+      "Human_Hire_Cost": "50000",
+      "Base_Human_Salary_Per_Cycle": "800",
+      "AI_Hire_Cost": "1000000"
+    },
+    {
+      "TierID": 6,
+      "BusinessName": "Troll Farms",
+      "Unlock_Cost": "1244160",
+      "Base_Cost": "1244160",
+      "Growth_Factor": 1.10,
+      "Base_Rev": "6480",
+      "Cycle_Time": 48.0,
+      "Human_Hire_Cost": "500000",
+      "Base_Human_Salary_Per_Cycle": "3000",
+      "AI_Hire_Cost": "15000000"
+    },
+    {
+      "TierID": 7,
+      "BusinessName": "Deepfake Governance",
+      "Unlock_Cost": "14929920",
+      "Base_Cost": "14929920",
+      "Growth_Factor": 1.14,
+      "Base_Rev": "19440",
+      "Cycle_Time": 96.0,
+      "Human_Hire_Cost": "5000000",
+      "Base_Human_Salary_Per_Cycle": "10000",
+      "AI_Hire_Cost": "150000000"
+    },
+    {
+      "TierID": 8,
+      "BusinessName": "Smart City Grid",
+      "Unlock_Cost": "179159040",
+      "Base_Cost": "179159040",
+      "Growth_Factor": 1.14,
+      "Base_Rev": "58320",
+      "Cycle_Time": 192.0,
+      "Human_Hire_Cost": "50000000",
+      "Base_Human_Salary_Per_Cycle": "40000",
+      "AI_Hire_Cost": "1500000000"
+    },
+    {
+      "TierID": 9,
+      "BusinessName": "Autonomous Drones",
+      "Unlock_Cost": "2149908480",
+      "Base_Cost": "2149908480",
+      "Growth_Factor": 1.14,
+      "Base_Rev": "174960",
+      "Cycle_Time": 384.0,
+      "Human_Hire_Cost": "500000000",
+      "Base_Human_Salary_Per_Cycle": "200000",
+      "AI_Hire_Cost": "50000000000"
     }
   ]
 }

@@ -321,7 +321,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AI_Capitalist.Data.DataManager
   autoSaveInterval: 5
   cloudSaveThrottle: 45
-  initialBalance: 500
+  initialBalance: 050
 --- !u!114 &1010257390
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -370,7 +370,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 429cf39bebc098c4c857a5d4a4e25f90, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AI_Capitalist.Economy.OfflineProgressManager
-  minimumSecondsForPopup: 60
+  minimumSecondsForPopup: 15
 --- !u!114 &1010257394
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -383,8 +383,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1c03762ba36796540aafc1c01ca5cae2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AI_Capitalist.Gameplay.TierManager
-  tierPrefab: {fileID: 1310363802876836732, guid: c7515e8670e330e43b9338d61afdc648, type: 3}
-  tierContainer: {fileID: 1010257388}
 --- !u!114 &1010257395
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -400,6 +398,7 @@ MonoBehaviour:
   tierUIPrefab: {fileID: 385246904435947978, guid: 0f42e47287291b34cab07aa135df329f, type: 3}
   managerPopupPrefab: {fileID: 809264435797911845, guid: 2682aed919ed6924ebbad5daf61e9001, type: 3}
   offlinePopupPrefab: {fileID: 7543252497401898603, guid: 92b52f2ddf2fbf744a2e8ed32f573421, type: 3}
+  unlockPanelPrefab: {fileID: 385246904435947978, guid: 906505737ee4eeb4facf7d57723e2b89, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

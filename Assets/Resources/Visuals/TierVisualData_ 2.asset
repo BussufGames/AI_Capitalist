@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AI_Capitalist.UI.TierVisualData
   TierID: 2
   DisplayName: Customer Support Chatbot
-  TierIcon: {fileID: -4003236357074861943, guid: fbc0108b604b15245822dc2fd4686fdd, type: 3}
+  TierIcon: {fileID: 21300000, guid: cbb28abd556ce6e4ca23fe001bce7e41, type: 3}
   StateManual: {fileID: -8875082060809689725, guid: a47a473420ee0374db017f44382960d0, type: 3}
   StateHumanWorking: {fileID: -2542418250449390616, guid: d3422898c53bd06418a8607722b4860a, type: 3}
   StateHumanStrike: {fileID: 7175680700154133198, guid: 1a9fb8bdded19b944ad1a60cca3aa0c2, type: 3}

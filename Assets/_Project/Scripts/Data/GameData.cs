@@ -11,6 +11,7 @@
  * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
  * 2023-10-29 - Bussuf Senior Dev - Added JsonProperty attributes to fix deserialization.
  * 2023-10-29 - Bussuf Senior Dev - Added IsWorkingManually to persistent TierDynamicData.
+ * 2023-10-30 - Bussuf Senior Dev - Added HighestUnlockedTier.
  * ----------------------------------------------------------------------------
  */
 
@@ -20,12 +21,7 @@ using Newtonsoft.Json;
 
 namespace AI_Capitalist.Data
 {
-	public enum ManagerState
-	{
-		None,
-		Human,
-		AI
-	}
+	public enum ManagerState { None, Human, AI }
 
 	[Serializable]
 	public class PlayerSaveData
@@ -35,6 +31,10 @@ namespace AI_Capitalist.Data
 
 		[JsonProperty]
 		public string CurrentBalance { get; set; } = "0";
+
+		// NEW: Tracks how many tiers the player has bought access to.
+		[JsonProperty]
+		public int HighestUnlockedTier { get; set; } = 1;
 
 		[JsonProperty]
 		public List<TierDynamicData> TiersData { get; set; } = new List<TierDynamicData>();
