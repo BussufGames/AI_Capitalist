@@ -2,18 +2,15 @@
  * ----------------------------------------------------------------------------
  * Project: AI Capitalist
  * Author:  Bussuf Senior Dev
- * Date:    2023-10-28
+ * Date:    2023-10-31
  * ----------------------------------------------------------------------------
  * Description:
- * The Service Locator and main entry point of the application.
- * Resides in the Bootstrap scene, registers all IServices, initializes them
- * in a STRICT order, and transitions to Main.
+ * The backbone of the application. 
+ * Manages the dependency injection and initialization order of all core services.
  * ----------------------------------------------------------------------------
  * Change Log:
  * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
- * 2023-10-28 - Bussuf Senior Dev - Enforced strict initialization order to prevent NRE.
- * 2023-10-28 - Bussuf Senior Dev - Added OfflineProgressManager to sequence.
- * 2023-10-28 - Bussuf Senior Dev - Added TierManager to sequence.
+ * 2023-10-31 - Bussuf Senior Dev - Added PrestigeManager to the initialization sequence.
  * ----------------------------------------------------------------------------
  */
 
@@ -21,6 +18,7 @@ using AI_Capitalist.Data;
 using AI_Capitalist.Economy;
 using AI_Capitalist.Gameplay;
 using AI_Capitalist.Services;
+using AI_Capitalist.UI;
 using BussufGames.Core;
 using System;
 using System.Collections.Generic;
@@ -29,12 +27,11 @@ using UnityEngine.SceneManagement;
 
 namespace AI_Capitalist.Core
 {
-	[DefaultExecutionOrder(-100)]
 	public class CoreManager : MonoBehaviour
 	{
 		public static CoreManager Instance { get; private set; }
 
-		private readonly Dictionary<Type, IService> _services = new Dictionary<Type, IService>();
+		private Dictionary<Type, IService> _services = new Dictionary<Type, IService>();
 
 		private void Awake()
 		{
@@ -50,9 +47,9 @@ namespace AI_Capitalist.Core
 			this.Log("CoreManager awoken and set to DontDestroyOnLoad.");
 		}
 
-		public void RegisterService<T>(T service) where T : IService
+		public void RegisterService<T>(T service) where T : class, IService
 		{
-			var type = typeof(T);
+			Type type = typeof(T);
 			if (!_services.ContainsKey(type))
 			{
 				_services.Add(type, service);
@@ -66,13 +63,13 @@ namespace AI_Capitalist.Core
 
 		public T GetService<T>() where T : class, IService
 		{
-			var type = typeof(T);
-			if (_services.TryGetValue(type, out var service))
+			Type type = typeof(T);
+			if (_services.TryGetValue(type, out IService service))
 			{
 				return service as T;
 			}
 
-			this.LogError($"Requested Service of type {type.Name} was not found! Did you register it?");
+			this.LogError($"Service of type {type.Name} not found!");
 			return null;
 		}
 
@@ -80,17 +77,26 @@ namespace AI_Capitalist.Core
 		{
 			this.Log("Starting Game Sequence...");
 
-			// STRICT INITIALIZATION ORDER:
+			// Authenticate (Async)
 			InitializeService<UGSManager>();
+
+			// Load Data
 			InitializeService<DataManager>();
+
+			// Setup Economy
 			InitializeService<EconomyManager>();
+
+			// Setup Prestige BEFORE offline progress so multipliers apply correctly
+			InitializeService<PrestigeManager>();
+
+			// Calculate offline time
 			InitializeService<OfflineProgressManager>();
 
-			// 5. Gameplay Logic
+			// Spawn Tiers
 			InitializeService<TierManager>();
 
-			// 6. User Interface (Must load after Logic is ready)
-			InitializeService<UI.UIManager>();
+			// Spawn UIs
+			InitializeService<UIManager>();
 
 			this.LogSuccess("All services initialized successfully.");
 
@@ -100,14 +106,14 @@ namespace AI_Capitalist.Core
 
 		private void InitializeService<T>() where T : class, IService
 		{
-			var service = GetService<T>();
+			T service = GetService<T>();
 			if (service != null)
 			{
 				service.Initialize();
 			}
 			else
 			{
-				this.LogError($"CRITICAL: Service {typeof(T).Name} is missing from the Bootstrap sequence!");
+				this.LogError($"Cannot initialize {typeof(T).Name} because it is missing!");
 			}
 		}
 	}

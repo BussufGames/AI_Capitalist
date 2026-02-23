@@ -14,6 +14,8 @@
  * 2023-10-29 - Bussuf Senior Dev - Converted ManualClick to time-based progress.
  * 2023-10-29 - Bussuf Senior Dev - Added HireHuman, HireAI, and PayDebt logic.
  * 2023-10-29 - Bussuf Senior Dev - Linked IsWorkingManually to persistent DynamicData.
+ * 2023-10-30 - Bussuf Senior Dev - Added UnlockNextTier logic.
+ * 2023-10-31 - Bussuf Senior Dev - Connected Prestige Multiplier to CompleteCycle.
  * ----------------------------------------------------------------------------
  */
 
@@ -37,7 +39,6 @@ namespace AI_Capitalist.Gameplay
 		public TierStaticData StaticData { get; private set; }
 		public bool IsInitialized { get; private set; }
 
-		// Proxy to the persistent saved data
 		public bool IsWorkingManually => DynamicData != null && DynamicData.IsWorkingManually;
 
 		private EconomyManager _economyManager;
@@ -104,7 +105,11 @@ namespace AI_Capitalist.Gameplay
 		private void CompleteCycle(bool isHuman)
 		{
 			BigDouble baseRev = BigDouble.Parse(StaticData.Base_Rev);
-			BigDouble earned = baseRev * DynamicData.OwnedUnits * GetMilestoneMultiplier();
+
+			// APPLY PRESTIGE MULTIPLIER HERE!
+			double prestigeBonus = _economyManager.GetGlobalPrestigeMultiplier();
+
+			BigDouble earned = baseRev * DynamicData.OwnedUnits * GetMilestoneMultiplier() * prestigeBonus;
 
 			_economyManager.AddIncome(earned);
 
@@ -175,8 +180,6 @@ namespace AI_Capitalist.Gameplay
 			return Mathf.Clamp01(DynamicData.CurrentCycleProgress / actualCycleTime);
 		}
 
-		// --- PUBLIC ACTIONS ---
-
 		public void ManualClick()
 		{
 			if (DynamicData.CurrentState != ManagerState.None || IsWorkingManually) return;
@@ -196,8 +199,6 @@ namespace AI_Capitalist.Gameplay
 				OnDataChanged?.Invoke();
 			}
 		}
-
-		// --- MANAGERS LOGIC ---
 
 		public void HireHumanManager()
 		{

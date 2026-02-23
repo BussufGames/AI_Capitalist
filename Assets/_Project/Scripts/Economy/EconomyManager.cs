@@ -2,25 +2,24 @@
  * ----------------------------------------------------------------------------
  * Project: AI Capitalist
  * Author:  Bussuf Senior Dev
- * Date:    2023-10-30
+ * Date:    2023-10-31
  * ----------------------------------------------------------------------------
  * Description:
  * The Core Economy Engine. Holds the Master JSON table in memory.
  * ----------------------------------------------------------------------------
  * Change Log:
- * 2023-10-30 - Bussuf Senior Dev - Added TryGetTierConfig for safe EOC checking.
- * 2023-10-31 - Bussuf Senior Dev - Added SetBalance function for non-destructive dev testing.
+ * 2023-10-30 - Bussuf Senior Dev - Added TryGetTierConfig.
+ * 2023-10-31 - Bussuf Senior Dev - Added LifetimeEarnings tracking and GlobalPrestigeMultiplier.
  * ----------------------------------------------------------------------------
  */
 
-using AI_Capitalist.Core;
-using AI_Capitalist.Data;
-using BreakInfinity;
-using BussufGames.Core;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Newtonsoft.Json;
+using BreakInfinity;
+using AI_Capitalist.Core;
+using AI_Capitalist.Data;
 
 namespace AI_Capitalist.Economy
 {
@@ -32,6 +31,8 @@ namespace AI_Capitalist.Economy
 		public event Action OnBuyModeChanged;
 
 		public BigDouble CurrentBalance { get; private set; }
+		public BigDouble LifetimeEarnings { get; private set; }
+		public BigDouble PrestigeTokens { get; private set; }
 		public BuyMode CurrentBuyMode { get; private set; } = BuyMode.x1;
 
 		private Dictionary<int, TierStaticData> _masterTable = new Dictionary<int, TierStaticData>();
@@ -47,17 +48,11 @@ namespace AI_Capitalist.Economy
 
 		public void Initialize()
 		{
-			this.Log("Initializing EconomyManager...");
-
 			_dataManager = CoreManager.Instance.GetService<DataManager>();
-			if (_dataManager == null)
-			{
-				this.LogError("DataManager is missing!");
-				return;
-			}
+			if (_dataManager == null) return;
 
 			LoadMasterTableConfig();
-			LoadPlayerBalance();
+			LoadPlayerEconomyData();
 		}
 
 		public void ToggleBuyMode()
@@ -77,46 +72,46 @@ namespace AI_Capitalist.Economy
 		private void LoadMasterTableConfig()
 		{
 			TextAsset jsonFile = Resources.Load<TextAsset>("MasterTable");
-			if (jsonFile == null)
+			if (jsonFile != null)
 			{
-				this.LogError("Could not find 'MasterTable.json' in Resources!");
-				return;
+				MasterEconomyTable table = JsonConvert.DeserializeObject<MasterEconomyTable>(jsonFile.text);
+				foreach (var tier in table.Tiers)
+				{
+					_masterTable[tier.TierID] = tier;
+				}
 			}
-
-			MasterEconomyTable table = JsonConvert.DeserializeObject<MasterEconomyTable>(jsonFile.text);
-			foreach (var tier in table.Tiers)
-			{
-				_masterTable[tier.TierID] = tier;
-			}
-
-			this.LogSuccess($"Loaded Economy Config with {_masterTable.Count} Tiers.");
 		}
 
-		private void LoadPlayerBalance()
+		private void LoadPlayerEconomyData()
 		{
-			string savedBalance = _dataManager.GameData.CurrentBalance;
-			CurrentBalance = BigDouble.Parse(savedBalance);
+			CurrentBalance = BigDouble.Parse(_dataManager.GameData.CurrentBalance);
+			LifetimeEarnings = BigDouble.Parse(_dataManager.GameData.LifetimeEarnings);
+			PrestigeTokens = BigDouble.Parse(_dataManager.GameData.PrestigeTokens);
 			OnBalanceChanged?.Invoke(CurrentBalance);
 		}
 
-		// Standard getter (Logs an error if missing)
-		public TierStaticData GetTierConfig(int tierID)
+		// --- PRESTIGE MATH ---
+		// Each token gives +10% bonus to all profits. So 10 tokens = 100% bonus (x2 multiplier)
+		public double GetGlobalPrestigeMultiplier()
 		{
-			if (_masterTable.TryGetValue(tierID, out var data)) return data;
-
-			this.LogError($"Requested config for unknown Tier ID: {tierID}");
-			return null;
+			return 1.0 + (PrestigeTokens.ToDouble() * 0.1);
 		}
 
-		// Safe getter for checking if a tier exists (Used for progression/EOC)
 		public bool TryGetTierConfig(int tierID, out TierStaticData data)
 		{
 			return _masterTable.TryGetValue(tierID, out data);
 		}
 
+		public TierStaticData GetTierConfig(int tierID)
+		{
+			if (_masterTable.TryGetValue(tierID, out var data)) return data;
+			return null;
+		}
+
 		public void AddIncome(BigDouble amount)
 		{
 			CurrentBalance += amount;
+			LifetimeEarnings += amount; // Track lifetime!
 			UpdateSaveData();
 		}
 
@@ -131,7 +126,6 @@ namespace AI_Capitalist.Economy
 			return false;
 		}
 
-		// DEV TOOL: Non-destructive balance reset
 		public void SetBalance(BigDouble newBalance)
 		{
 			CurrentBalance = newBalance;
@@ -171,6 +165,7 @@ namespace AI_Capitalist.Economy
 		private void UpdateSaveData()
 		{
 			_dataManager.GameData.CurrentBalance = CurrentBalance.ToString();
+			_dataManager.GameData.LifetimeEarnings = LifetimeEarnings.ToString();
 			OnBalanceChanged?.Invoke(CurrentBalance);
 		}
 	}

@@ -273,6 +273,7 @@ GameObject:
   - component: {fileID: 1010257393}
   - component: {fileID: 1010257394}
   - component: {fileID: 1010257395}
+  - component: {fileID: 1010257396}
   m_Layer: 0
   m_Name: CORE_MANAGER
   m_TagString: Untagged
@@ -399,6 +400,18 @@ MonoBehaviour:
   managerPopupPrefab: {fileID: 809264435797911845, guid: 2682aed919ed6924ebbad5daf61e9001, type: 3}
   offlinePopupPrefab: {fileID: 7543252497401898603, guid: 92b52f2ddf2fbf744a2e8ed32f573421, type: 3}
   unlockPanelPrefab: {fileID: 385246904435947978, guid: 906505737ee4eeb4facf7d57723e2b89, type: 3}
+--- !u!114 &1010257396
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1010257386}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb5e799e7f0dad54c93c428d2be89199, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AI_Capitalist.Gameplay.PrestigeManager
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

@@ -12,6 +12,7 @@
  * 2023-10-29 - Bussuf Senior Dev - Added JsonProperty attributes to fix deserialization.
  * 2023-10-29 - Bussuf Senior Dev - Added IsWorkingManually to persistent TierDynamicData.
  * 2023-10-30 - Bussuf Senior Dev - Added HighestUnlockedTier.
+ * 2023-10-31 - Bussuf Senior Dev - Added LifetimeEarnings and PrestigeTokens.
  * ----------------------------------------------------------------------------
  */
 
@@ -32,9 +33,15 @@ namespace AI_Capitalist.Data
 		[JsonProperty]
 		public string CurrentBalance { get; set; } = "0";
 
-		// NEW: Tracks how many tiers the player has bought access to.
 		[JsonProperty]
 		public int HighestUnlockedTier { get; set; } = 1;
+
+		// --- PRESTIGE SYSTEM DATA ---
+		[JsonProperty]
+		public string LifetimeEarnings { get; set; } = "0"; // Used to calculate available prestige rewards
+
+		[JsonProperty]
+		public string PrestigeTokens { get; set; } = "0"; // The premium currency kept after reset
 
 		[JsonProperty]
 		public List<TierDynamicData> TiersData { get; set; } = new List<TierDynamicData>();

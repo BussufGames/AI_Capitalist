@@ -4,12 +4,9 @@
  * Author:  Bussuf Senior Dev
  * Date:    2023-10-31
  * ----------------------------------------------------------------------------
- * Description:
- * Handles Unity Gaming Services initialization, Authentication, and Cloud Save.
- * ----------------------------------------------------------------------------
  * Change Log:
- * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
- * 2023-10-31 - Bussuf Senior Dev - Added check to prevent 'Already Signed In' error on soft reboots.
+ * 2023-10-31 - Bussuf Senior Dev - Added silent offline mode to prevent error spamming
+ * when playing without internet, and reassuring success log upon reconnection.
  * ----------------------------------------------------------------------------
  */
 
@@ -29,6 +26,8 @@ namespace AI_Capitalist.Services
 	{
 		public bool IsAuthenticated { get; private set; }
 		public string PlayerID { get; private set; }
+
+		private bool _isOffline = false; // Prevents error spamming
 
 		private void Awake()
 		{
@@ -56,7 +55,6 @@ namespace AI_Capitalist.Services
 		{
 			try
 			{
-				// FIX: Check if we are ALREADY signed in (happens when reloading Scene 0 in the Editor)
 				if (AuthenticationService.Instance.IsSignedIn)
 				{
 					PlayerID = AuthenticationService.Instance.PlayerId;
@@ -70,11 +68,7 @@ namespace AI_Capitalist.Services
 				IsAuthenticated = true;
 				this.LogSuccess($"Signed in anonymously. PlayerID: {PlayerID}");
 			}
-			catch (AuthenticationException ex)
-			{
-				this.LogError($"Sign in failed: {ex.Message}");
-			}
-			catch (RequestFailedException ex)
+			catch (Exception ex)
 			{
 				this.LogError($"Sign in failed: {ex.Message}");
 			}
@@ -110,11 +104,26 @@ namespace AI_Capitalist.Services
 			{
 				var data = new Dictionary<string, object> { { key, jsonValue } };
 				await CloudSaveService.Instance.Data.Player.SaveAsync(data);
-				this.LogSuccess("Data successfully synced to UGS Cloud.");
+
+				// Reconnection reassurance
+				if (_isOffline)
+				{
+					this.LogSuccess("<color=#00FF00>Internet connection restored. Cloud Save synced successfully!</color>");
+					_isOffline = false;
+				}
+				else
+				{
+					this.LogSuccess("Data successfully synced to UGS Cloud.");
+				}
 			}
 			catch (Exception e)
 			{
-				this.LogError($"Error saving to cloud: {e.Message}");
+				// Only log the error ONCE when disconnecting, then stay silent
+				if (!_isOffline)
+				{
+					this.LogWarning($"<color=#FF9800>Cloud Save paused: No internet connection. Game will silently save locally and retry later. ({e.Message})</color>");
+					_isOffline = true;
+				}
 			}
 		}
 	}
