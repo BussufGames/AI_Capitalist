@@ -322,7 +322,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AI_Capitalist.Data.DataManager
   autoSaveInterval: 5
   cloudSaveThrottle: 45
-  initialBalance: 050
+  initialBalance: 0
 --- !u!114 &1010257390
 MonoBehaviour:
   m_ObjectHideFlags: 0

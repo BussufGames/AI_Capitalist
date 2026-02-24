@@ -76,14 +76,14 @@ namespace AI_Capitalist.UI
 			if (pending > 0)
 			{
 				// Shows "+ X (Next at $4.00M)"
-				pendingText.text = $"+ {pending} (Next: ${nextThreshold.ToCurrencyString()})";
+				pendingText.text = $"+ {pending} (Global Multipliers)"; // (Next: ${nextThreshold.ToCurrencyString()})";
 				pendingText.color = activeColor;
 				ascendButton.interactable = true;
 			}
 			else
 			{
 				// Accurately tells the player exactly how much money they need to hit the next token!
-				pendingText.text = $"Need ${nextThreshold.ToCurrencyString()} Lifetime";
+				pendingText.text = "Multiplier Reset (Unavailble)"; //$"Need ${nextThreshold.ToCurrencyString()} Lifetime";
 				pendingText.color = inactiveColor;
 				ascendButton.interactable = false;
 			}
