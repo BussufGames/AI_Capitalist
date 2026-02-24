@@ -2,33 +2,23 @@
  * ----------------------------------------------------------------------------
  * Project: AI Capitalist
  * Author:  Bussuf Senior Dev
- * Date:    2023-10-29
- * ----------------------------------------------------------------------------
- * Description:
- * Generates the UI Prefabs for each Tier and links them to the Logic Controllers.
- * Manages the Singleton ManagerPopupUI and dynamically spawns OfflinePopupUI.
+ * Date:    2023-10-30
  * ----------------------------------------------------------------------------
  * Change Log:
- * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
- * 2023-10-29 - Bussuf Senior Dev - Added SceneLoaded event to dynamically find container.
- * 2023-10-29 - Bussuf Senior Dev - Added Manager Popup instantiation.
- * 2023-10-29 - Bussuf Senior Dev - Updated OpenManagerPopup to pass VisualData.
- * 2023-10-29 - Bussuf Senior Dev - Added instantiation of OfflinePopupUI on load.
- * 2026-02-23 - Bussuf Senior Dev - Added Next tier unlock animation with DOTWeen.
- * 2023-10-30 - Bussuf Senior Dev - Fixed EOC (End of Content) bug by safely 
- * checking if next tier exists before spawning unlock panel.
+ * 2023-10-30 - Bussuf Senior Dev - Fixed EOC bug.
+ * 2026-02-24 - Bussuf Senior Dev - Subscribed to OnOfflineProgressCalculated for background resuming.
  * ----------------------------------------------------------------------------
  */
 
-using AI_Capitalist.Core;
-using AI_Capitalist.Data;
-using AI_Capitalist.Economy;
-using AI_Capitalist.Gameplay;
-using BussufGames.Core;
-using DG.Tweening;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using DG.Tweening;
+using AI_Capitalist.Core;
+using AI_Capitalist.Gameplay;
+using AI_Capitalist.Economy;
+using AI_Capitalist.Data;
+using BussufGames.Core;
 
 namespace AI_Capitalist.UI
 {
@@ -69,12 +59,25 @@ namespace AI_Capitalist.UI
 
 			SceneManager.sceneLoaded += OnSceneLoaded;
 			_tierManager.OnTierUnlocked += HandleNewTierUnlocked;
+
+			// Listen for background resumes
+			var offlineMgr = CoreManager.Instance.GetService<OfflineProgressManager>();
+			if (offlineMgr != null)
+			{
+				offlineMgr.OnOfflineProgressCalculated += SpawnOfflinePopup;
+			}
 		}
 
 		private void OnDestroy()
 		{
 			SceneManager.sceneLoaded -= OnSceneLoaded;
 			if (_tierManager != null) _tierManager.OnTierUnlocked -= HandleNewTierUnlocked;
+
+			if (CoreManager.Instance != null)
+			{
+				var offlineMgr = CoreManager.Instance.GetService<OfflineProgressManager>();
+				if (offlineMgr != null) offlineMgr.OnOfflineProgressCalculated -= SpawnOfflinePopup;
+			}
 		}
 
 		private void LoadVisualData()
@@ -111,13 +114,25 @@ namespace AI_Capitalist.UI
 				_activeManagerPopup = popupObj.GetComponent<ManagerPopupUI>();
 				_activeManagerPopup.gameObject.SetActive(false);
 
+				// Check if offline progress happened on boot
 				var offlineMgr = CoreManager.Instance.GetService<OfflineProgressManager>();
 				if (offlineMgr != null && offlineMgr.HasOfflineProgress)
 				{
-					GameObject offlineObj = Instantiate(offlinePopupPrefab, mainCanvas.transform);
-					offlineObj.transform.SetAsLastSibling();
-					offlineObj.GetComponent<OfflinePopupUI>()?.OpenPopup(offlineMgr.PendingTimeAway, offlineMgr.PendingOfflineEarnings);
+					SpawnOfflinePopup(offlineMgr.PendingTimeAway, offlineMgr.PendingOfflineEarnings);
 				}
+			}
+		}
+
+		// FIX: Extracted to a method so it can be called dynamically when returning from app background
+		private void SpawnOfflinePopup(System.TimeSpan timeAway, BreakInfinity.BigDouble earnings)
+		{
+			Canvas mainCanvas = Object.FindAnyObjectByType<Canvas>();
+			if (mainCanvas != null)
+			{
+				GameObject offlineObj = Instantiate(offlinePopupPrefab, mainCanvas.transform);
+				offlineObj.name = "Offline_Popup_UI";
+				offlineObj.transform.SetAsLastSibling();
+				offlineObj.GetComponent<OfflinePopupUI>()?.OpenPopup(timeAway, earnings);
 			}
 		}
 
@@ -148,7 +163,6 @@ namespace AI_Capitalist.UI
 
 			int nextTierID = dataManager.GameData.HighestUnlockedTier + 1;
 
-			// FIX: Use TryGetTierConfig to gracefully handle End Of Content (EOC)
 			if (_economyManager.TryGetTierConfig(nextTierID, out TierStaticData nextConfig))
 			{
 				GameObject unlockObj = Instantiate(unlockPanelPrefab, _uiContainer);
@@ -157,10 +171,6 @@ namespace AI_Capitalist.UI
 
 				_currentUnlockPanel = unlockObj.GetComponent<UnlockPanelUI>();
 				_currentUnlockPanel.Initialize(nextConfig);
-			}
-			else
-			{
-				this.Log($"Tier {nextTierID} does not exist in MasterTable. End of content reached.");
 			}
 		}
 
@@ -175,7 +185,6 @@ namespace AI_Capitalist.UI
 
 					SpawnSingleTierUI(newController, true);
 
-					// Will gracefully do nothing if it's the last tier
 					SpawnUnlockPanelForNextTier();
 				});
 			}

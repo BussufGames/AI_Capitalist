@@ -4,15 +4,10 @@
  * Author:  Bussuf Senior Dev
  * Date:    2023-10-29
  * ----------------------------------------------------------------------------
- * Description:
- * Calculates earnings while the application was closed.
- * Always calculates background progression to keep progress bars accurate.
- * Only triggers the "Welcome Back" popup if >60s to prevent spam.
- * ----------------------------------------------------------------------------
  * Change Log:
- * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
  * 2023-10-29 - Bussuf Senior Dev - Added pending properties for Offline UI Popup.
- * 2023-10-29 - Bussuf Senior Dev - Implemented silent offline tracking for Manual mode.
+ * 2026-02-24 - Bussuf Senior Dev - Added OnApplicationPause to support backgrounding on mobile.
+ * 2026-02-24 - Bussuf Senior Dev - Added OnOfflineProgressCalculated event for dynamic UI spawning.
  * ----------------------------------------------------------------------------
  */
 
@@ -35,6 +30,9 @@ namespace AI_Capitalist.Economy
 		public BigDouble PendingOfflineEarnings { get; private set; } = BigDouble.Zero;
 		public TimeSpan PendingTimeAway { get; private set; } = TimeSpan.Zero;
 		public bool HasOfflineProgress => PendingOfflineEarnings > BigDouble.Zero;
+
+		// NEW: Event to notify the UIManager to spawn the popup if the app resumed from background
+		public event Action<TimeSpan, BigDouble> OnOfflineProgressCalculated;
 
 		private EconomyManager _economyManager;
 		private DataManager _dataManager;
@@ -59,6 +57,16 @@ namespace AI_Capitalist.Economy
 			CalculateOfflineProgress();
 		}
 
+		// FIX: Catch app resume from background (mobile behavior)
+		private void OnApplicationPause(bool pauseStatus)
+		{
+			// If pauseStatus is false, the app just came BACK to the foreground!
+			if (!pauseStatus && _economyManager != null && _dataManager != null)
+			{
+				CalculateOfflineProgress();
+			}
+		}
+
 		private void CalculateOfflineProgress()
 		{
 			var gameData = _dataManager.GameData;
@@ -74,6 +82,7 @@ namespace AI_Capitalist.Economy
 			TimeSpan timeAway = DateTime.UtcNow - lastSaveTime;
 
 			BigDouble totalOfflineEarnings = BigDouble.Zero;
+			double globalPrestigeMulti = _economyManager.GetGlobalPrestigeMultiplier();
 
 			foreach (var tier in gameData.TiersData)
 			{
@@ -82,11 +91,10 @@ namespace AI_Capitalist.Economy
 				var staticConfig = _economyManager.GetTierConfig(tier.TierID);
 				if (staticConfig == null) continue;
 
-				BigDouble cycleRev = BigDouble.Parse(staticConfig.Base_Rev) * tier.OwnedUnits * GetMilestoneMultiplier(tier.OwnedUnits);
+				BigDouble cycleRev = BigDouble.Parse(staticConfig.Base_Rev) * tier.OwnedUnits * GetMilestoneMultiplier(tier.OwnedUnits) * globalPrestigeMulti;
 
 				if (tier.CurrentState == ManagerState.None)
 				{
-					// MANUAL MODE - It only runs if they clicked it before leaving!
 					if (tier.IsWorkingManually)
 					{
 						float actualCycleTime = staticConfig.Cycle_Time;
@@ -130,18 +138,23 @@ namespace AI_Capitalist.Economy
 			{
 				_economyManager.AddIncome(totalOfflineEarnings);
 
-				// Only trigger the popup UI if they were away for long enough (e.g. 1 minute)
 				if (timeAway.TotalSeconds >= minimumSecondsForPopup)
 				{
 					PendingOfflineEarnings = totalOfflineEarnings;
 					PendingTimeAway = timeAway;
 					this.LogSuccess($"<color=yellow>OFFLINE PROGRESS UI SPAWNED: Earned {totalOfflineEarnings.ToCurrencyString()}</color>");
+
+					// FIX: Notify listeners (UIManager) to pop the welcome back screen dynamically
+					OnOfflineProgressCalculated?.Invoke(timeAway, totalOfflineEarnings);
 				}
 				else
 				{
 					this.Log($"Silent offline calculation. Earned {totalOfflineEarnings.ToCurrencyString()} in {(int)timeAway.TotalSeconds}s.");
 				}
 			}
+
+			// Update DataManager's timestamp to NOW so it doesn't double-count later
+			_dataManager.SaveGame();
 		}
 
 		public void AcknowledgeOfflineProgress()

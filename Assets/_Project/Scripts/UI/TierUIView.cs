@@ -8,10 +8,9 @@
  * The View layer for a single Tier. 
  * ----------------------------------------------------------------------------
  * Change Log:
- * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
- * 2023-10-29 - Bussuf Senior Dev - Added Milestones, States, Multi-buy split text.
- * 2023-10-29 - Bussuf Senior Dev - Removed "MAX" text replacing it with true calculation UX.
- * 2023-10-29 - Bussuf Senior Dev - Added initial progress bar sync to prevent full bar glitch.
+ * 2023-10-29 - Bussuf Senior Dev - Added initial progress bar sync.
+ * 2026-02-24 - Bussuf Senior Dev - Fixed Rev display to include Global Prestige Multiplier.
+ * 2026-02-24 - Bussuf Senior Dev - Bound UpdateBuyButtonDisplay to balance changes for live MAX updates.
  * ----------------------------------------------------------------------------
  */
 
@@ -49,6 +48,7 @@ namespace AI_Capitalist.UI
 
 		private TierController _controller;
 		private TierVisualData _visualData;
+		private EconomyManager _economyManager;
 		private RectTransform _rectTransform;
 
 		private void Awake()
@@ -66,6 +66,7 @@ namespace AI_Capitalist.UI
 		{
 			_controller = controller;
 			_visualData = visualData;
+			_economyManager = Core.CoreManager.Instance.GetService<EconomyManager>();
 
 			if (visualData != null)
 			{
@@ -80,16 +81,14 @@ namespace AI_Capitalist.UI
 			_controller.OnProgressUpdated += UpdateProgressBar;
 			_controller.OnDataChanged += RefreshDisplay;
 
-			var economy = Core.CoreManager.Instance.GetService<EconomyManager>();
-			if (economy != null)
+			if (_economyManager != null)
 			{
-				economy.OnBuyModeChanged += RefreshDisplay;
-				economy.OnBalanceChanged += (balance) => RefreshBuyButtonInteractability();
+				_economyManager.OnBuyModeChanged += RefreshDisplay;
+				// FIX: Now triggers full button display update to keep MAX amounts accurate
+				_economyManager.OnBalanceChanged += OnBalanceChangedHandler;
 			}
 
 			RefreshDisplay();
-
-			// FIX VISUAL GLITCH: Force sync the progress bar on load so it matches data
 			UpdateProgressBar(_controller.GetNormalizedProgress());
 		}
 
@@ -101,11 +100,16 @@ namespace AI_Capitalist.UI
 				_controller.OnDataChanged -= RefreshDisplay;
 			}
 
-			if (Core.CoreManager.Instance != null)
+			if (_economyManager != null)
 			{
-				var economy = Core.CoreManager.Instance.GetService<EconomyManager>();
-				if (economy != null) economy.OnBuyModeChanged -= RefreshDisplay;
+				_economyManager.OnBuyModeChanged -= RefreshDisplay;
+				_economyManager.OnBalanceChanged -= OnBalanceChangedHandler;
 			}
+		}
+
+		private void OnBalanceChangedHandler(BigDouble currentBalance)
+		{
+			UpdateBuyButtonDisplay();
 		}
 
 		private void UpdateProgressBar(float normalizedProgress)
@@ -118,8 +122,11 @@ namespace AI_Capitalist.UI
 			levelText.text = $"Lvl: {_controller.DynamicData.OwnedUnits}";
 			milestoneBarFill.fillAmount = _controller.GetMilestoneProgress();
 
+			// FIX: Multiply visual revenue by Prestige Global Multiplier
 			BigDouble baseRev = BigDouble.Parse(_controller.StaticData.Base_Rev);
-			BigDouble totalRev = baseRev * _controller.DynamicData.OwnedUnits * _controller.GetMilestoneMultiplier();
+			double prestigeBonus = _economyManager != null ? _economyManager.GetGlobalPrestigeMultiplier() : 1.0;
+			BigDouble totalRev = baseRev * _controller.DynamicData.OwnedUnits * _controller.GetMilestoneMultiplier() * prestigeBonus;
+
 			revenueText.text = $"Rev: ${totalRev.ToCurrencyString()}";
 
 			UpdateBuyButtonDisplay();
@@ -128,24 +135,14 @@ namespace AI_Capitalist.UI
 
 		private void UpdateBuyButtonDisplay()
 		{
-			var economy = Core.CoreManager.Instance.GetService<EconomyManager>();
-			if (economy == null) return;
+			if (_economyManager == null) return;
 
-			BigDouble nextCost = economy.GetBuyCostAndAmount(_controller.StaticData.TierID, _controller.DynamicData.OwnedUnits, out int amountToBuy);
+			BigDouble nextCost = _economyManager.GetBuyCostAndAmount(_controller.StaticData.TierID, _controller.DynamicData.OwnedUnits, out int amountToBuy);
 
-			buyAmountText.text = economy.CurrentBuyMode == BuyMode.Max ? $"Buy {amountToBuy}" : $"Buy {amountToBuy}";
+			buyAmountText.text = $"Buy {amountToBuy}";
 			buyCostText.text = $"${nextCost.ToCurrencyString()}";
 
-			RefreshBuyButtonInteractability();
-		}
-
-		private void RefreshBuyButtonInteractability()
-		{
-			var economy = Core.CoreManager.Instance.GetService<EconomyManager>();
-			if (economy == null) return;
-
-			BigDouble cost = economy.GetBuyCostAndAmount(_controller.StaticData.TierID, _controller.DynamicData.OwnedUnits, out int amountToBuy);
-			buyButton.interactable = economy.CurrentBalance >= cost && amountToBuy > 0;
+			buyButton.interactable = _economyManager.CurrentBalance >= nextCost && amountToBuy > 0;
 		}
 
 		private void UpdateStateImageDisplay()
