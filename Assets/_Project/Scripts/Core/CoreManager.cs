@@ -116,6 +116,13 @@ namespace AI_Capitalist.Core
 				this.LogError($"Cannot initialize {typeof(T).Name} because it is missing!");
 			}
 		}
+
+		// --- DEV TOOLS / RESET SUPPORT ---
+		public void ClearAllServices()
+		{
+			_services.Clear();
+			this.LogWarning("All services cleared from CoreManager.");
+		}
 	}
 }
 

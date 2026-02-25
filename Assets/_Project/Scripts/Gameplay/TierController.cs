@@ -238,6 +238,19 @@ namespace AI_Capitalist.Gameplay
 				OnDataChanged?.Invoke();
 			}
 		}
+
+		// --- DEV TOOLS / QA ONLY ---
+		public void ForceStrike()
+		{
+			if (DynamicData.CurrentState != ManagerState.Human) return;
+
+			BigDouble salary = BigDouble.Parse(StaticData.Base_Human_Salary_Per_Cycle);
+			BigDouble strikeDebt = salary * 5; // 5 missed payments triggers a strike
+
+			DynamicData.AccumulatedDebt = strikeDebt.ToString();
+			_dataManager.SaveGame();
+			OnDataChanged?.Invoke();
+		}
 	}
 }
 

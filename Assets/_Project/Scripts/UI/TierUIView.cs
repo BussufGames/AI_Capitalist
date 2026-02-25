@@ -4,13 +4,9 @@
  * Author:  Bussuf Senior Dev
  * Date:    2023-10-29
  * ----------------------------------------------------------------------------
- * Description:
- * The View layer for a single Tier. 
- * ----------------------------------------------------------------------------
  * Change Log:
- * 2023-10-29 - Bussuf Senior Dev - Added initial progress bar sync.
- * 2026-02-24 - Bussuf Senior Dev - Fixed Rev display to include Global Prestige Multiplier.
- * 2026-02-24 - Bussuf Senior Dev - Bound UpdateBuyButtonDisplay to balance changes for live MAX updates.
+ * 2026-02-24 - Bussuf Senior Dev - Bound UpdateBuyButtonDisplay to balance changes.
+ * 2026-02-24 - Bussuf Senior Dev - Added 5-Lights UX for Human Manager fatigue/debt.
  * ----------------------------------------------------------------------------
  */
 
@@ -19,6 +15,7 @@ using UnityEngine.UI;
 using TMPro;
 using DG.Tweening;
 using BreakInfinity;
+using System;
 using AI_Capitalist.Gameplay;
 using AI_Capitalist.Economy;
 
@@ -40,6 +37,12 @@ namespace AI_Capitalist.UI
 		[SerializeField] private Image progressBarFill;
 		[SerializeField] private Image milestoneBarFill;
 		[SerializeField] private Image actionButtonStateImage;
+
+		[Header("Human Manager UX (5 Lights)")]
+		[SerializeField] private GameObject lightsContainer;     // Holds all 5 lights (hide/show)
+		[SerializeField] private Image[] lightImages;            // Array of exactly 5 images
+		[SerializeField] private Color lightOnColor = Color.green;
+		[SerializeField] private Color lightOffColor = Color.gray;
 
 		[Header("Buttons")]
 		[SerializeField] private Button actionButton;
@@ -84,7 +87,6 @@ namespace AI_Capitalist.UI
 			if (_economyManager != null)
 			{
 				_economyManager.OnBuyModeChanged += RefreshDisplay;
-				// FIX: Now triggers full button display update to keep MAX amounts accurate
 				_economyManager.OnBalanceChanged += OnBalanceChangedHandler;
 			}
 
@@ -122,7 +124,6 @@ namespace AI_Capitalist.UI
 			levelText.text = $"Lvl: {_controller.DynamicData.OwnedUnits}";
 			milestoneBarFill.fillAmount = _controller.GetMilestoneProgress();
 
-			// FIX: Multiply visual revenue by Prestige Global Multiplier
 			BigDouble baseRev = BigDouble.Parse(_controller.StaticData.Base_Rev);
 			double prestigeBonus = _economyManager != null ? _economyManager.GetGlobalPrestigeMultiplier() : 1.0;
 			BigDouble totalRev = baseRev * _controller.DynamicData.OwnedUnits * _controller.GetMilestoneMultiplier() * prestigeBonus;
@@ -131,43 +132,55 @@ namespace AI_Capitalist.UI
 
 			UpdateBuyButtonDisplay();
 			UpdateStateImageDisplay();
+			UpdateHumanLightsUX(); // <-- NEW CALL
+		}
+
+		private void UpdateHumanLightsUX()
+		{
+			if (lightsContainer == null || lightImages == null || lightImages.Length != 5) return;
+
+			// Only show lights if there is a human manager
+			if (_controller.DynamicData.CurrentState == Data.ManagerState.Human)
+			{
+				lightsContainer.SetActive(true);
+
+				BigDouble salary = BigDouble.Parse(_controller.StaticData.Base_Human_Salary_Per_Cycle);
+				BigDouble currentDebt = BigDouble.Parse(_controller.DynamicData.AccumulatedDebt);
+
+				int missedPayments = salary > BigDouble.Zero ? (int)Math.Floor((currentDebt / salary).ToDouble()) : 0;
+
+				// Max 5 lights. If missed 0 -> 5 active. If missed 5 -> 0 active.
+				int activeLights = Mathf.Clamp(5 - missedPayments, 0, 5);
+
+				for (int i = 0; i < lightImages.Length; i++)
+				{
+					lightImages[i].color = (i < activeLights) ? lightOnColor : lightOffColor;
+				}
+			}
+			else
+			{
+				lightsContainer.SetActive(false);
+			}
 		}
 
 		private void UpdateBuyButtonDisplay()
 		{
 			if (_economyManager == null) return;
-
 			BigDouble nextCost = _economyManager.GetBuyCostAndAmount(_controller.StaticData.TierID, _controller.DynamicData.OwnedUnits, out int amountToBuy);
-
 			buyAmountText.text = $"Buy {amountToBuy}";
 			buyCostText.text = $"${nextCost.ToCurrencyString()}";
-
 			buyButton.interactable = _economyManager.CurrentBalance >= nextCost && amountToBuy > 0;
 		}
 
 		private void UpdateStateImageDisplay()
 		{
 			if (_visualData == null) return;
-
 			if (_controller.DynamicData.CurrentState == Data.ManagerState.AI)
-			{
 				actionButtonStateImage.sprite = _visualData.StateAIRunning;
-			}
 			else if (_controller.DynamicData.CurrentState == Data.ManagerState.Human)
-			{
-				if (_controller.IsHumanOnStrike())
-				{
-					actionButtonStateImage.sprite = _visualData.StateHumanStrike;
-				}
-				else
-				{
-					actionButtonStateImage.sprite = _visualData.StateHumanWorking;
-				}
-			}
+				actionButtonStateImage.sprite = _controller.IsHumanOnStrike() ? _visualData.StateHumanStrike : _visualData.StateHumanWorking;
 			else
-			{
 				actionButtonStateImage.sprite = _visualData.StateManual;
-			}
 		}
 
 		private void OnActionClicked()
@@ -180,20 +193,15 @@ namespace AI_Capitalist.UI
 			if (_controller.DynamicData.CurrentState == Data.ManagerState.None && _controller.IsWorkingManually) return;
 
 			if (_controller.DynamicData.CurrentState == Data.ManagerState.Human && _controller.IsHumanOnStrike())
-			{
 				_controller.PayHumanDebt();
-			}
 			else
-			{
 				_controller.ManualClick();
-			}
 		}
 
 		private void OnBuyClicked()
 		{
 			_rectTransform.DOComplete();
 			_rectTransform.DOPunchScale(Vector3.one * 0.05f, 0.2f, 10, 1);
-
 			_controller.BuyUnits();
 		}
 
@@ -201,16 +209,8 @@ namespace AI_Capitalist.UI
 		{
 			iconImage.transform.DOComplete();
 			iconImage.transform.DOPunchScale(Vector3.one * 0.1f, 0.2f, 10, 1);
-
 			var uiManager = Core.CoreManager.Instance.GetService<UIManager>();
-			if (uiManager != null)
-			{
-				uiManager.OpenManagerPopup(_controller);
-			}
+			if (uiManager != null) uiManager.OpenManagerPopup(_controller);
 		}
 	}
 }
-
-// ----------------------------------------------------------------------------
-// EOF
-// ----------------------------------------------------------------------------
