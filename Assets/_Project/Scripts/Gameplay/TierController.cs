@@ -2,20 +2,16 @@
  * ----------------------------------------------------------------------------
  * Project: AI Capitalist
  * Author:  Bussuf Senior Dev
- * Date:    2023-10-29
+ * Date:    2026-02-28
  * ----------------------------------------------------------------------------
  * Description:
- * The core logical controller for a single business tier. 
+ * The core logical controller for a single business tier.
  * Handles the timer loop, manager states, debt calculation, and hiring.
  * ----------------------------------------------------------------------------
  * Change Log:
- * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
- * 2023-10-29 - Bussuf Senior Dev - Added Global Milestones & Multi-buy logic.
- * 2023-10-29 - Bussuf Senior Dev - Converted ManualClick to time-based progress.
- * 2023-10-29 - Bussuf Senior Dev - Added HireHuman, HireAI, and PayDebt logic.
- * 2023-10-29 - Bussuf Senior Dev - Linked IsWorkingManually to persistent DynamicData.
- * 2023-10-30 - Bussuf Senior Dev - Added UnlockNextTier logic.
  * 2023-10-31 - Bussuf Senior Dev - Connected Prestige Multiplier to CompleteCycle.
+ * 2026-02-28 - Bussuf Senior Dev - Added UpgradesManager integration.
+ * 2026-02-28 - Bussuf Senior Dev - Added Overdrive (Flow) logic for AI Managers.
  * ----------------------------------------------------------------------------
  */
 
@@ -43,6 +39,15 @@ namespace AI_Capitalist.Gameplay
 
 		private EconomyManager _economyManager;
 		private DataManager _dataManager;
+		private UpgradesManager _upgradesManager;
+
+		// --- OVERDRIVE SETTINGS ---
+		private const float OVERDRIVE_THRESHOLD = 0.2f; // Global Threshold for flow mode
+
+		public bool IsOverdriveActive =>
+			DynamicData != null &&
+			DynamicData.CurrentState == ManagerState.AI &&
+			GetCurrentCycleTime() <= OVERDRIVE_THRESHOLD;
 
 		public void Initialize(TierDynamicData dynamicData, TierStaticData staticData)
 		{
@@ -51,15 +56,43 @@ namespace AI_Capitalist.Gameplay
 
 			_economyManager = CoreManager.Instance.GetService<EconomyManager>();
 			_dataManager = CoreManager.Instance.GetService<DataManager>();
+			_upgradesManager = CoreManager.Instance.GetService<UpgradesManager>();
+
+			if (_upgradesManager != null)
+			{
+				_upgradesManager.OnUpgradesChanged += HandleUpgradesChanged;
+			}
 
 			IsInitialized = true;
 			OnDataChanged?.Invoke();
+		}
+
+		private void OnDestroy()
+		{
+			if (_upgradesManager != null)
+			{
+				_upgradesManager.OnUpgradesChanged -= HandleUpgradesChanged;
+			}
 		}
 
 		private void Update()
 		{
 			if (!IsInitialized || DynamicData.OwnedUnits <= 0) return;
 
+			// 1. Overdrive Mode (Continuous Flow)
+			if (IsOverdriveActive)
+			{
+				DynamicData.CurrentCycleProgress = 1f; // Lock visually at 100%
+				OnProgressUpdated?.Invoke(DynamicData.CurrentCycleProgress);
+
+				BigDouble revPerSec = GetRevenuePerCycle() / GetCurrentCycleTime();
+				BigDouble frameRev = revPerSec * Time.deltaTime;
+
+				_economyManager.AddIncome(frameRev);
+				return; // Skip normal chunk progress
+			}
+
+			// 2. Normal Mode (Chunk Progress)
 			if (DynamicData.CurrentState == ManagerState.AI)
 			{
 				ProcessWorkingState(DynamicData.CurrentAISpeedMulti, false, false);
@@ -78,7 +111,7 @@ namespace AI_Capitalist.Gameplay
 		{
 			if (isHuman && IsHumanOnStrike()) return;
 
-			float actualCycleTime = StaticData.Cycle_Time / speedMultiplier;
+			float actualCycleTime = GetCurrentCycleTime(speedMultiplier);
 			DynamicData.CurrentCycleProgress += Time.deltaTime;
 
 			OnProgressUpdated?.Invoke(GetNormalizedProgress());
@@ -104,13 +137,7 @@ namespace AI_Capitalist.Gameplay
 
 		private void CompleteCycle(bool isHuman)
 		{
-			BigDouble baseRev = BigDouble.Parse(StaticData.Base_Rev);
-
-			// APPLY PRESTIGE MULTIPLIER HERE!
-			double prestigeBonus = _economyManager.GetGlobalPrestigeMultiplier();
-
-			BigDouble earned = baseRev * DynamicData.OwnedUnits * GetMilestoneMultiplier() * prestigeBonus;
-
+			BigDouble earned = GetRevenuePerCycle();
 			_economyManager.AddIncome(earned);
 
 			if (isHuman)
@@ -119,6 +146,34 @@ namespace AI_Capitalist.Gameplay
 				BigDouble currentDebt = BigDouble.Parse(DynamicData.AccumulatedDebt);
 				DynamicData.AccumulatedDebt = (currentDebt + salary).ToString();
 			}
+		}
+
+		// --- NEW REVENUE CALCULATION (Includes Upgrades) ---
+		public BigDouble GetRevenuePerCycle()
+		{
+			BigDouble baseRev = BigDouble.Parse(StaticData.Base_Rev);
+			double prestigeBonus = _economyManager != null ? _economyManager.GetGlobalPrestigeMultiplier() : 1.0;
+			double upgradesBonus = _upgradesManager != null ? _upgradesManager.GetRevenueMultiplier(StaticData.TierID) : 1.0;
+
+			return baseRev * DynamicData.OwnedUnits * GetMilestoneMultiplier() * prestigeBonus * upgradesBonus;
+		}
+
+		// --- NEW SPEED CALCULATION (Includes Upgrades) ---
+		public float GetCurrentCycleTime(float managerSpeedMulti = 1f)
+		{
+			// If calling from outside without specifying manager speed, figure it out based on state
+			if (managerSpeedMulti == 1f)
+			{
+				if (DynamicData.CurrentState == ManagerState.Human) managerSpeedMulti = DynamicData.CurrentHumanSpeedMulti;
+				else if (DynamicData.CurrentState == ManagerState.AI) managerSpeedMulti = DynamicData.CurrentAISpeedMulti;
+			}
+
+			float baseTime = StaticData.Cycle_Time;
+			double upgradesSpeedMulti = _upgradesManager != null ? _upgradesManager.GetSpeedMultiplier(StaticData.TierID) : 1.0;
+
+			float finalTime = (baseTime / managerSpeedMulti) / (float)upgradesSpeedMulti;
+
+			return Mathf.Max(0.01f, finalTime); // Absolute safety clamp to prevent division by zero
 		}
 
 		public bool IsHumanOnStrike()
@@ -149,7 +204,6 @@ namespace AI_Capitalist.Gameplay
 		{
 			int lastMilestone = 0;
 			int nextMilestone = MILESTONES[0];
-
 			for (int i = 0; i < MILESTONES.Length; i++)
 			{
 				if (DynamicData.OwnedUnits >= MILESTONES[i])
@@ -164,7 +218,6 @@ namespace AI_Capitalist.Gameplay
 			}
 
 			if (lastMilestone == nextMilestone) return 1f;
-
 			float currentProgress = DynamicData.OwnedUnits - lastMilestone;
 			float requiredForNext = nextMilestone - lastMilestone;
 			return Mathf.Clamp01(currentProgress / requiredForNext);
@@ -172,11 +225,8 @@ namespace AI_Capitalist.Gameplay
 
 		public float GetNormalizedProgress()
 		{
-			float speedMultiplier = 1f;
-			if (DynamicData.CurrentState == ManagerState.AI) speedMultiplier = DynamicData.CurrentAISpeedMulti;
-			else if (DynamicData.CurrentState == ManagerState.Human) speedMultiplier = DynamicData.CurrentHumanSpeedMulti;
-
-			float actualCycleTime = StaticData.Cycle_Time / speedMultiplier;
+			if (IsOverdriveActive) return 1f; // Lock visually full in overdrive
+			float actualCycleTime = GetCurrentCycleTime();
 			return Mathf.Clamp01(DynamicData.CurrentCycleProgress / actualCycleTime);
 		}
 
@@ -216,7 +266,6 @@ namespace AI_Capitalist.Gameplay
 			BigDouble baseAiCost = BigDouble.Parse(StaticData.AI_Hire_Cost);
 			BigDouble currentDebt = BigDouble.Parse(DynamicData.AccumulatedDebt);
 			BigDouble totalCost = baseAiCost + currentDebt;
-
 			if (DynamicData.CurrentState != ManagerState.AI && _economyManager.TrySpend(totalCost))
 			{
 				DynamicData.CurrentState = ManagerState.AI;
@@ -237,6 +286,11 @@ namespace AI_Capitalist.Gameplay
 				_dataManager.SaveGame();
 				OnDataChanged?.Invoke();
 			}
+		}
+
+		private void HandleUpgradesChanged()
+		{
+			OnDataChanged?.Invoke(); // Refresh UI if an upgrade affected this tier
 		}
 
 		// --- DEV TOOLS / QA ONLY ---

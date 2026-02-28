@@ -196,6 +196,12 @@ namespace AI_Capitalist.Economy
 			_dataManager.GameData.LifetimeEarnings = LifetimeEarnings.ToString();
 			OnBalanceChanged?.Invoke(CurrentBalance);
 		}
+
+		public void ResetLifetimeEarnings()
+		{
+			LifetimeEarnings = BigDouble.Zero;
+			UpdateSaveData();
+		}
 		#endregion
 	}
 }

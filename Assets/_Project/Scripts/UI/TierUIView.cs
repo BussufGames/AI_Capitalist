@@ -2,11 +2,12 @@
  * ----------------------------------------------------------------------------
  * Project: AI Capitalist
  * Author:  Bussuf Senior Dev
- * Date:    2023-10-29
+ * Date:    2026-02-28
  * ----------------------------------------------------------------------------
  * Change Log:
  * 2026-02-24 - Bussuf Senior Dev - Bound UpdateBuyButtonDisplay to balance changes.
  * 2026-02-24 - Bussuf Senior Dev - Added 5-Lights UX for Human Manager fatigue/debt.
+ * 2026-02-28 - Bussuf Senior Dev - Added Overdrive UI logic (Scrolling RawImage & Per Sec Text).
  * ----------------------------------------------------------------------------
  */
 
@@ -27,7 +28,6 @@ namespace AI_Capitalist.UI
 		[SerializeField] private TMP_Text nameText;
 		[SerializeField] private TMP_Text levelText;
 		[SerializeField] private TMP_Text revenueText;
-
 		[Header("Buy Button Texts")]
 		[SerializeField] private TMP_Text buyAmountText;
 		[SerializeField] private TMP_Text buyCostText;
@@ -38,8 +38,14 @@ namespace AI_Capitalist.UI
 		[SerializeField] private Image milestoneBarFill;
 		[SerializeField] private Image actionButtonStateImage;
 
+		[Header("Overdrive UX (Flowing Bar)")]
+		[Tooltip("The RawImage with repeating stripes texture. Must be child of the Progress Bar.")]
+		[SerializeField] private RawImage overdriveFlowImage;
+		[SerializeField] private float overdriveScrollSpeed = 2f;
+
 		[Header("Human Manager UX (5 Lights)")]
-		[SerializeField] private GameObject lightsContainer;     // Holds all 5 lights (hide/show)
+		[SerializeField] private GameObject lightsContainer;
+		// Holds all 5 lights (hide/show)
 		[SerializeField] private Image[] lightImages;            // Array of exactly 5 images
 		[SerializeField] private Color lightOnColor = Color.green;
 		[SerializeField] private Color lightOffColor = Color.gray;
@@ -60,7 +66,6 @@ namespace AI_Capitalist.UI
 
 			actionButton.onClick.AddListener(OnActionClicked);
 			buyButton.onClick.AddListener(OnBuyClicked);
-
 			if (iconButton != null)
 				iconButton.onClick.AddListener(OnIconClicked);
 		}
@@ -70,7 +75,6 @@ namespace AI_Capitalist.UI
 			_controller = controller;
 			_visualData = visualData;
 			_economyManager = Core.CoreManager.Instance.GetService<EconomyManager>();
-
 			if (visualData != null)
 			{
 				nameText.text = visualData.DisplayName;
@@ -90,8 +94,22 @@ namespace AI_Capitalist.UI
 				_economyManager.OnBalanceChanged += OnBalanceChangedHandler;
 			}
 
+			// Hide overdrive by default
+			if (overdriveFlowImage != null) overdriveFlowImage.gameObject.SetActive(false);
+
 			RefreshDisplay();
 			UpdateProgressBar(_controller.GetNormalizedProgress());
+		}
+
+		private void Update()
+		{
+			// Parallax scroll effect for Overdrive stripes
+			if (_controller != null && _controller.IsOverdriveActive && overdriveFlowImage != null && overdriveFlowImage.gameObject.activeSelf)
+			{
+				Rect uvRect = overdriveFlowImage.uvRect;
+				uvRect.x -= Time.deltaTime * overdriveScrollSpeed;
+				overdriveFlowImage.uvRect = uvRect;
+			}
 		}
 
 		private void OnDestroy()
@@ -116,7 +134,14 @@ namespace AI_Capitalist.UI
 
 		private void UpdateProgressBar(float normalizedProgress)
 		{
-			progressBarFill.fillAmount = normalizedProgress;
+			if (_controller.IsOverdriveActive)
+			{
+				progressBarFill.fillAmount = 1f; // Lock full
+			}
+			else
+			{
+				progressBarFill.fillAmount = normalizedProgress;
+			}
 		}
 
 		private void RefreshDisplay()
@@ -124,21 +149,30 @@ namespace AI_Capitalist.UI
 			levelText.text = $"Lvl: {_controller.DynamicData.OwnedUnits}";
 			milestoneBarFill.fillAmount = _controller.GetMilestoneProgress();
 
-			BigDouble baseRev = BigDouble.Parse(_controller.StaticData.Base_Rev);
-			double prestigeBonus = _economyManager != null ? _economyManager.GetGlobalPrestigeMultiplier() : 1.0;
-			BigDouble totalRev = baseRev * _controller.DynamicData.OwnedUnits * _controller.GetMilestoneMultiplier() * prestigeBonus;
+			BigDouble revPerCycle = _controller.GetRevenuePerCycle();
 
-			revenueText.text = $"Rev: ${totalRev.ToCurrencyString()}";
+			// Toggle Overdrive Visuals & Text
+			if (_controller.IsOverdriveActive)
+			{
+				if (overdriveFlowImage != null) overdriveFlowImage.gameObject.SetActive(true);
+
+				BigDouble revPerSec = revPerCycle / _controller.GetCurrentCycleTime();
+				revenueText.text = $"Rev: ${revPerSec.ToCurrencyString()} / sec";
+			}
+			else
+			{
+				if (overdriveFlowImage != null) overdriveFlowImage.gameObject.SetActive(false);
+				revenueText.text = $"Rev: ${revPerCycle.ToCurrencyString()}";
+			}
 
 			UpdateBuyButtonDisplay();
 			UpdateStateImageDisplay();
-			UpdateHumanLightsUX(); // <-- NEW CALL
+			UpdateHumanLightsUX();
 		}
 
 		private void UpdateHumanLightsUX()
 		{
 			if (lightsContainer == null || lightImages == null || lightImages.Length != 5) return;
-
 			// Only show lights if there is a human manager
 			if (_controller.DynamicData.CurrentState == Data.ManagerState.Human)
 			{
@@ -149,9 +183,9 @@ namespace AI_Capitalist.UI
 
 				int missedPayments = salary > BigDouble.Zero ? (int)Math.Floor((currentDebt / salary).ToDouble()) : 0;
 
-				// Max 5 lights. If missed 0 -> 5 active. If missed 5 -> 0 active.
+				// Max 5 lights.
+				// If missed 0 -> 5 active. If missed 5 -> 0 active.
 				int activeLights = Mathf.Clamp(5 - missedPayments, 0, 5);
-
 				for (int i = 0; i < lightImages.Length; i++)
 				{
 					lightImages[i].color = (i < activeLights) ? lightOnColor : lightOffColor;

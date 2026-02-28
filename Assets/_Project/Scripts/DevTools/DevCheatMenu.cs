@@ -2,15 +2,14 @@
  * ----------------------------------------------------------------------------
  * Project: AI Capitalist
  * Author:  Bussuf Senior Dev
- * Date:    2026-02-24
+ * Date:    2026-02-28
  * ----------------------------------------------------------------------------
  * Description:
  * Advanced Developer Terminal. Includes Economy, Time, and Tier management tabs.
  * ----------------------------------------------------------------------------
  */
-
-using System;
 using System.Threading.Tasks;
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -18,17 +17,13 @@ using BreakInfinity;
 using AI_Capitalist.Economy;
 using AI_Capitalist.Gameplay;
 using AI_Capitalist.Data;
+using System.Collections.Generic;
 
 namespace AI_Capitalist.DevTools
 {
 	public class DevCheatMenu : MonoBehaviour
 	{
-		[Header("Tab Navigation Buttons")]
-		[SerializeField] private Button btnTabEconomy;
-		[SerializeField] private Button btnTabTime;
-		[SerializeField] private Button btnTabTiers;
-
-		[Header("Tabs Configuration (Panels)")]
+		[Header("Tabs Configuration")]
 		[SerializeField] private GameObject economyTab;
 		[SerializeField] private GameObject timeTab;
 		[SerializeField] private GameObject tiersTab;
@@ -39,6 +34,7 @@ namespace AI_Capitalist.DevTools
 		[SerializeField] private Button btnAdd1B;
 		[SerializeField] private Button btnAdd1T;
 		[SerializeField] private Button btnZeroFunds;
+		[SerializeField] private Button btnZeroLifetime; // <-- NEW BUTTON
 		[SerializeField] private Button btnResetSave;
 
 		[Header("Time Buttons")]
@@ -61,8 +57,13 @@ namespace AI_Capitalist.DevTools
 		[SerializeField] private Button btnLvlPlus10;
 		[SerializeField] private Button btnStateNone;
 		[SerializeField] private Button btnStateHuman;
-		[SerializeField] private TMP_Text btnStateHumanText; // To change between "HUMAN" and "STRIKE"
+		[SerializeField] private TMP_Text btnStateHumanText;
 		[SerializeField] private Button btnStateAI;
+
+		[Header("Tab Navigation Buttons")]
+		[SerializeField] private Button btnTabEconomy;
+		[SerializeField] private Button btnTabTime;
+		[SerializeField] private Button btnTabTiers;
 
 		private int _currentTierIndex = 0;
 		private TierManager _tierManager;
@@ -80,6 +81,7 @@ namespace AI_Capitalist.DevTools
 			if (btnAdd1B != null) btnAdd1B.onClick.AddListener(() => AddMoney(new BigDouble(1_000_000_000)));
 			if (btnAdd1T != null) btnAdd1T.onClick.AddListener(() => AddMoney(new BigDouble(1_000_000_000_000)));
 			if (btnZeroFunds != null) btnZeroFunds.onClick.AddListener(ZeroFunds);
+			if (btnZeroLifetime != null) btnZeroLifetime.onClick.AddListener(ZeroLifetime); // <-- HOOKED NEW BUTTON
 			if (btnResetSave != null) btnResetSave.onClick.AddListener(ResetSave);
 
 			// --- Time Hooks ---
@@ -101,7 +103,6 @@ namespace AI_Capitalist.DevTools
 			if (btnStateHuman != null) btnStateHuman.onClick.AddListener(OnHumanStateButtonClicked);
 			if (btnStateAI != null) btnStateAI.onClick.AddListener(() => OverrideTierState(ManagerState.AI));
 
-			// Default Tab Setup
 			ShowTab(0);
 		}
 
@@ -113,7 +114,6 @@ namespace AI_Capitalist.DevTools
 			}
 		}
 
-		// --- TAB MANAGEMENT ---
 		public void ShowTab(int tabIndex)
 		{
 			if (economyTab != null) economyTab.SetActive(tabIndex == 0);
@@ -123,7 +123,6 @@ namespace AI_Capitalist.DevTools
 			if (tabIndex == 2) UpdateTierDisplay();
 		}
 
-		// --- ECONOMY ---
 		private void AddMoney(BigDouble amount)
 		{
 			var eco = Core.CoreManager.Instance.GetService<EconomyManager>();
@@ -136,9 +135,35 @@ namespace AI_Capitalist.DevTools
 			if (eco != null) eco.SetBalance(BigDouble.Zero);
 		}
 
+		private void ZeroLifetime()
+		{
+			var eco = Core.CoreManager.Instance.GetService<EconomyManager>();
+			if (eco != null) eco.ResetLifetimeEarnings();
+			Debug.Log("<color=yellow>DEV: Lifetime Earnings Reset to 0.</color>");
+		}
+
 		private async void ResetSave()
 		{
-			Time.timeScale = 1f; // Always reset time scale on reboot
+			Time.timeScale = 1f;
+
+			// FIX: Wipe active memory data so OnDestroy doesn't save the old data back!
+			var dataManager = Core.CoreManager.Instance.GetService<DataManager>();
+			if (dataManager != null)
+			{
+				if (dataManager.GameData != null)
+				{
+					// Clear all fields manually since GameData's setter is private
+					dataManager.GameData.LastSaveTime = null;
+					dataManager.GameData.CurrentBalance = null;
+					dataManager.GameData.HighestUnlockedTier = 0;
+					dataManager.GameData.LifetimeEarnings = null;
+					dataManager.GameData.PrestigeTokens = null;
+					dataManager.GameData.TiersData = new List<TierDynamicData>();
+					dataManager.GameData.PurchasedUpgrades = new List<string>();
+				}
+				dataManager.SaveGame();
+			}
+
 			var eco = Core.CoreManager.Instance.GetService<EconomyManager>();
 			if (eco != null) eco.SetBalance(BigDouble.Zero);
 
@@ -157,7 +182,6 @@ namespace AI_Capitalist.DevTools
 			UnityEngine.SceneManagement.SceneManager.LoadScene(0);
 		}
 
-		// --- TIME ---
 		private void ForceGlobalStrike()
 		{
 			_tierManager ??= Core.CoreManager.Instance.GetService<TierManager>();
@@ -173,7 +197,6 @@ namespace AI_Capitalist.DevTools
 			Debug.Log("<color=orange>DEV: Forced global strike on all Human managers!</color>");
 		}
 
-		// --- TIERS ---
 		private void NavigateTier(int direction)
 		{
 			_tierManager ??= Core.CoreManager.Instance.GetService<TierManager>();
@@ -203,14 +226,7 @@ namespace AI_Capitalist.DevTools
 
 			if (btnStateHumanText != null)
 			{
-				if (currentTier.DynamicData.CurrentState == ManagerState.Human)
-				{
-					btnStateHumanText.text = "STRIKE";
-				}
-				else
-				{
-					btnStateHumanText.text = "HUMAN";
-				}
+				btnStateHumanText.text = (currentTier.DynamicData.CurrentState == ManagerState.Human) ? "STRIKE" : "HUMAN";
 			}
 		}
 
@@ -220,7 +236,7 @@ namespace AI_Capitalist.DevTools
 			if (currentTier == null) return;
 
 			currentTier.DynamicData.OwnedUnits += amount;
-			if (currentTier.DynamicData.OwnedUnits < 1) currentTier.DynamicData.OwnedUnits = 1; // Minimum 1 if unlocked
+			if (currentTier.DynamicData.OwnedUnits < 1) currentTier.DynamicData.OwnedUnits = 1;
 
 			Core.CoreManager.Instance.GetService<DataManager>()?.SaveGame();
 		}
@@ -232,7 +248,7 @@ namespace AI_Capitalist.DevTools
 
 			if (currentTier.DynamicData.CurrentState == ManagerState.Human)
 			{
-				currentTier.ForceStrike(); // Override button acts as Strike
+				currentTier.ForceStrike();
 			}
 			else
 			{
@@ -246,7 +262,7 @@ namespace AI_Capitalist.DevTools
 			if (currentTier == null) return;
 
 			currentTier.DynamicData.CurrentState = newState;
-			currentTier.DynamicData.AccumulatedDebt = "0"; // Clear any strike debt on override
+			currentTier.DynamicData.AccumulatedDebt = "0";
 			currentTier.DynamicData.IsWorkingManually = false;
 
 			Core.CoreManager.Instance.GetService<DataManager>()?.SaveGame();
