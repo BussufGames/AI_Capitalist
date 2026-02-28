@@ -117,7 +117,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AI_Capitalist.UI.UpgradeItemUI
   tierIconImage: {fileID: 4236868778740257240}
-  typeIconImage: {fileID: 0}
+  typeIconImage: {fileID: 4275053092794125464}
   multiplierText: {fileID: 4528832761771745291}
   nameText: {fileID: 396577431972015961}
   costText: {fileID: 8219940357300546628}
@@ -158,7 +158,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 323, y: 0}
+  m_AnchoredPosition: {x: 316, y: -77}
   m_SizeDelta: {x: 97.3468, y: -200.6832}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &2193109586259566471
@@ -189,7 +189,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -639739562547589237, guid: 068fcb5fe1e0e9f499c39bc8899d4219, type: 3}
+  m_Sprite: {fileID: -5678386360063871151, guid: 77122c579682ae7498f00e1a1a421bfb, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -375,7 +375,7 @@ GameObject:
   - component: {fileID: 8024713046899681180}
   - component: {fileID: 4528832761771745291}
   m_Layer: 5
-  m_Name: DescriptionText
+  m_Name: MultiplierText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -397,7 +397,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 62.8054, y: -35.885}
+  m_AnchoredPosition: {x: 55.8054, y: -112.884995}
   m_SizeDelta: {x: 302.5282, y: 71.771}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8024713046899681180
@@ -729,10 +729,10 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 155.64
+  m_fontSize: 41.7
   m_fontSizeBase: 155.64
   m_fontWeight: 400
-  m_enableAutoSizing: 0
+  m_enableAutoSizing: 1
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 0
@@ -809,8 +809,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 376.1186, y: 0}
+  m_SizeDelta: {x: -752.2372, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3146044219061997443
 CanvasRenderer:
@@ -884,8 +884,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 2.0347, y: -104.93198}
-  m_SizeDelta: {x: 424.07, y: 66.3225}
+  m_AnchoredPosition: {x: 97.83782, y: -104.93198}
+  m_SizeDelta: {x: 232.4637, y: 66.3225}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2610443926101398938
 CanvasRenderer:
@@ -915,7 +915,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: State_Text
+  m_text: Cost_Text
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -949,7 +949,7 @@ MonoBehaviour:
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 0
-  m_HorizontalAlignment: 1
+  m_HorizontalAlignment: 4
   m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
@@ -959,7 +959,7 @@ MonoBehaviour:
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_TextWrappingMode: 1
+  m_TextWrappingMode: 0
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
@@ -1052,7 +1052,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Name_Text
+  m_text: Customer Support Chatbot
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1079,10 +1079,10 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 60
-  m_fontSizeBase: 60
+  m_fontSize: 51.2
+  m_fontSizeBase: 50.31
   m_fontWeight: 400
-  m_enableAutoSizing: 0
+  m_enableAutoSizing: 1
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 1

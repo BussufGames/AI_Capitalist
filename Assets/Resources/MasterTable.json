@@ -113,218 +113,583 @@
     {
       "UpgradeID": 1,
       "TargetTierID": 1,
-      "UpgradeName": "Basic Image Recognition",
-      "Cost": "3500",
+      "Cost": "500",
       "UpgradeType": "Revenue",
-      "Multiplier": 3.0
+      "Multiplier": 2.0
     },
     {
       "UpgradeID": 2,
       "TargetTierID": 1,
-      "UpgradeName": "Auto-Solve Algorithms",
-      "Cost": "25000",
+      "Cost": "1500",
       "UpgradeType": "Speed",
-      "Multiplier": 2.0
+      "Multiplier": 1.5
     },
     {
       "UpgradeID": 3,
       "TargetTierID": 1,
-      "UpgradeName": "Botnet Integration",
-      "Cost": "120000",
-      "UpgradeType": "Revenue",
-      "Multiplier": 4.0
-    },
-    {
-      "UpgradeID": 4,
-      "TargetTierID": 2,
-      "UpgradeName": "Canned Responses",
-      "Cost": "85000",
+      "Cost": "2500",
       "UpgradeType": "Revenue",
       "Multiplier": 3.0
     },
     {
-      "UpgradeID": 5,
+      "UpgradeID": 4,
       "TargetTierID": 2,
-      "UpgradeName": "Voice Synthesis Overclock",
-      "Cost": "450000",
+      "Cost": "5000",
+      "UpgradeType": "Revenue",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 5,
+      "TargetTierID": 1,
+      "Cost": "10000",
       "UpgradeType": "Speed",
       "Multiplier": 2.0
     },
     {
       "UpgradeID": 6,
       "TargetTierID": 2,
-      "UpgradeName": "Empathy Inhibitors",
-      "Cost": "2500000",
-      "UpgradeType": "Revenue",
-      "Multiplier": 4.0
-    },
-    {
-      "UpgradeID": 7,
-      "TargetTierID": 3,
-      "UpgradeName": "Stable Diffusion V2",
-      "Cost": "1800000",
-      "UpgradeType": "Revenue",
-      "Multiplier": 3.0
-    },
-    {
-      "UpgradeID": 8,
-      "TargetTierID": 3,
-      "UpgradeName": "GPU Farm Expansion",
-      "Cost": "9500000",
-      "UpgradeType": "Speed",
-      "Multiplier": 2.0
-    },
-    {
-      "UpgradeID": 9,
-      "TargetTierID": 3,
-      "UpgradeName": "Copyright Evasion Routine",
-      "Cost": "55000000",
-      "UpgradeType": "Revenue",
-      "Multiplier": 4.0
-    },
-    {
-      "UpgradeID": 10,
-      "TargetTierID": 4,
-      "UpgradeName": "StackOverflow Scraper",
-      "Cost": "85000000",
-      "UpgradeType": "Revenue",
-      "Multiplier": 3.0
-    },
-    {
-      "UpgradeID": 11,
-      "TargetTierID": 4,
-      "UpgradeName": "Syntax Highlighter Pro",
-      "Cost": "450000000",
-      "UpgradeType": "Speed",
-      "Multiplier": 2.0
-    },
-    {
-      "UpgradeID": 12,
-      "TargetTierID": 4,
-      "UpgradeName": "Automated Unit Tests",
-      "Cost": "2500000000",
-      "UpgradeType": "Revenue",
-      "Multiplier": 4.0
-    },
-    {
-      "UpgradeID": 13,
-      "TargetTierID": 5,
-      "UpgradeName": "Loophole Finder v1.0",
-      "Cost": "15000000000",
-      "UpgradeType": "Revenue",
-      "Multiplier": 3.0
-    },
-    {
-      "UpgradeID": 14,
-      "TargetTierID": 5,
-      "UpgradeName": "Digital Paralegals",
-      "Cost": "65000000000",
-      "UpgradeType": "Speed",
-      "Multiplier": 2.0
-    },
-    {
-      "UpgradeID": 15,
-      "TargetTierID": 6,
-      "UpgradeName": "WebMD Integration",
-      "Cost": "850000000000",
-      "UpgradeType": "Revenue",
-      "Multiplier": 3.0
-    },
-    {
-      "UpgradeID": 16,
-      "TargetTierID": 6,
-      "UpgradeName": "Nano-Bot Diagnostics",
-      "Cost": "5000000000000",
-      "UpgradeType": "Speed",
-      "Multiplier": 2.0
-    },
-    {
-      "UpgradeID": 17,
-      "TargetTierID": 7,
-      "UpgradeName": "High-Frequency Cables",
-      "Cost": "2.5e13",
-      "UpgradeType": "Revenue",
-      "Multiplier": 3.0
-    },
-    {
-      "UpgradeID": 18,
-      "TargetTierID": 7,
-      "UpgradeName": "Quantum Prediction Models",
-      "Cost": "1.5e14",
-      "UpgradeType": "Speed",
-      "Multiplier": 2.0
-    },
-    {
-      "UpgradeID": 19,
-      "TargetTierID": 8,
-      "UpgradeName": "Traffic Light Override",
-      "Cost": "5.5e15",
-      "UpgradeType": "Revenue",
-      "Multiplier": 3.0
-    },
-    {
-      "UpgradeID": 20,
-      "TargetTierID": 8,
-      "UpgradeName": "Grid Optimization",
-      "Cost": "8.5e16",
-      "UpgradeType": "Speed",
-      "Multiplier": 2.0
-    },
-    {
-      "UpgradeID": 21,
-      "TargetTierID": 9,
-      "UpgradeName": "Targeting Calibration",
-      "Cost": "2.5e18",
-      "UpgradeType": "Revenue",
-      "Multiplier": 3.0
-    },
-    {
-      "UpgradeID": 22,
-      "TargetTierID": 9,
-      "UpgradeName": "Skynet Protocols",
-      "Cost": "1.5e20",
-      "UpgradeType": "Speed",
-      "Multiplier": 2.0
-    },
-    {
-      "UpgradeID": 100,
-      "TargetTierID": 0,
-      "UpgradeName": "Synergy Algorithms",
-      "Cost": "2500000",
-      "UpgradeType": "Revenue",
-      "Multiplier": 2.0
-    },
-    {
-      "UpgradeID": 101,
-      "TargetTierID": 0,
-      "UpgradeName": "Cloud Infrastructure",
-      "Cost": "85000000",
-      "UpgradeType": "Speed",
-      "Multiplier": 1.2
-    },
-    {
-      "UpgradeID": 102,
-      "TargetTierID": 0,
-      "UpgradeName": "Human Redundancy Elimination",
-      "Cost": "5000000000",
-      "UpgradeType": "Revenue",
-      "Multiplier": 2.5
-    },
-    {
-      "UpgradeID": 103,
-      "TargetTierID": 0,
-      "UpgradeName": "Quantum Processing",
-      "Cost": "1.5e12",
+      "Cost": "25000",
       "UpgradeType": "Speed",
       "Multiplier": 1.5
     },
     {
-      "UpgradeID": 104,
+      "UpgradeID": 7,
       "TargetTierID": 0,
-      "UpgradeName": "Global Monopoly",
-      "Cost": "2.5e16",
+      "Cost": "50000",
+      "UpgradeType": "Revenue",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 8,
+      "TargetTierID": 1,
+      "Cost": "50000",
+      "UpgradeType": "Revenue",
+      "Multiplier": 4.0
+    },
+    {
+      "UpgradeID": 9,
+      "TargetTierID": 2,
+      "Cost": "100000",
       "UpgradeType": "Revenue",
       "Multiplier": 3.0
+    },
+    {
+      "UpgradeID": 10,
+      "TargetTierID": 1,
+      "Cost": "250000",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 11,
+      "TargetTierID": 3,
+      "Cost": "250000",
+      "UpgradeType": "Revenue",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 12,
+      "TargetTierID": 2,
+      "Cost": "500000",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 13,
+      "TargetTierID": 0,
+      "Cost": "1000000",
+      "UpgradeType": "Speed",
+      "Multiplier": 1.5
+    },
+    {
+      "UpgradeID": 14,
+      "TargetTierID": 1,
+      "Cost": "1000000",
+      "UpgradeType": "Revenue",
+      "Multiplier": 5.0
+    },
+    {
+      "UpgradeID": 15,
+      "TargetTierID": 3,
+      "Cost": "1000000",
+      "UpgradeType": "Speed",
+      "Multiplier": 1.5
+    },
+    {
+      "UpgradeID": 16,
+      "TargetTierID": 2,
+      "Cost": "2500000",
+      "UpgradeType": "Revenue",
+      "Multiplier": 4.0
+    },
+    {
+      "UpgradeID": 17,
+      "TargetTierID": 1,
+      "Cost": "5000000",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.5
+    },
+    {
+      "UpgradeID": 18,
+      "TargetTierID": 3,
+      "Cost": "5000000",
+      "UpgradeType": "Revenue",
+      "Multiplier": 3.0
+    },
+    {
+      "UpgradeID": 19,
+      "TargetTierID": 2,
+      "Cost": "10000000",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 20,
+      "TargetTierID": 4,
+      "Cost": "15000000",
+      "UpgradeType": "Revenue",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 21,
+      "TargetTierID": 3,
+      "Cost": "25000000",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 22,
+      "TargetTierID": 0,
+      "Cost": "50000000",
+      "UpgradeType": "Revenue",
+      "Multiplier": 3.0
+    },
+    {
+      "UpgradeID": 23,
+      "TargetTierID": 2,
+      "Cost": "50000000",
+      "UpgradeType": "Revenue",
+      "Multiplier": 5.0
+    },
+    {
+      "UpgradeID": 24,
+      "TargetTierID": 4,
+      "Cost": "50000000",
+      "UpgradeType": "Speed",
+      "Multiplier": 1.5
+    },
+    {
+      "UpgradeID": 25,
+      "TargetTierID": 3,
+      "Cost": "100000000",
+      "UpgradeType": "Revenue",
+      "Multiplier": 4.0
+    },
+    {
+      "UpgradeID": 26,
+      "TargetTierID": 2,
+      "Cost": "250000000",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.5
+    },
+    {
+      "UpgradeID": 27,
+      "TargetTierID": 4,
+      "Cost": "250000000",
+      "UpgradeType": "Revenue",
+      "Multiplier": 3.0
+    },
+    {
+      "UpgradeID": 28,
+      "TargetTierID": 3,
+      "Cost": "500000000",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 29,
+      "TargetTierID": 4,
+      "Cost": "1e9",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 30,
+      "TargetTierID": 5,
+      "Cost": "1e9",
+      "UpgradeType": "Revenue",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 31,
+      "TargetTierID": 0,
+      "Cost": "2.5e9",
+      "UpgradeType": "Speed",
+      "Multiplier": 1.5
+    },
+    {
+      "UpgradeID": 32,
+      "TargetTierID": 3,
+      "Cost": "2.5e9",
+      "UpgradeType": "Revenue",
+      "Multiplier": 5.0
+    },
+    {
+      "UpgradeID": 33,
+      "TargetTierID": 4,
+      "Cost": "5e9",
+      "UpgradeType": "Revenue",
+      "Multiplier": 4.0
+    },
+    {
+      "UpgradeID": 34,
+      "TargetTierID": 5,
+      "Cost": "5e9",
+      "UpgradeType": "Speed",
+      "Multiplier": 1.5
+    },
+    {
+      "UpgradeID": 35,
+      "TargetTierID": 3,
+      "Cost": "1e10",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.5
+    },
+    {
+      "UpgradeID": 36,
+      "TargetTierID": 4,
+      "Cost": "2.5e10",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 37,
+      "TargetTierID": 5,
+      "Cost": "2.5e10",
+      "UpgradeType": "Revenue",
+      "Multiplier": 3.0
+    },
+    {
+      "UpgradeID": 38,
+      "TargetTierID": 0,
+      "Cost": "1e11",
+      "UpgradeType": "Revenue",
+      "Multiplier": 4.0
+    },
+    {
+      "UpgradeID": 39,
+      "TargetTierID": 4,
+      "Cost": "1e11",
+      "UpgradeType": "Revenue",
+      "Multiplier": 5.0
+    },
+    {
+      "UpgradeID": 40,
+      "TargetTierID": 5,
+      "Cost": "1e11",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 41,
+      "TargetTierID": 6,
+      "Cost": "1e11",
+      "UpgradeType": "Revenue",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 42,
+      "TargetTierID": 4,
+      "Cost": "5e11",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.5
+    },
+    {
+      "UpgradeID": 43,
+      "TargetTierID": 5,
+      "Cost": "5e11",
+      "UpgradeType": "Revenue",
+      "Multiplier": 4.0
+    },
+    {
+      "UpgradeID": 44,
+      "TargetTierID": 6,
+      "Cost": "5e11",
+      "UpgradeType": "Speed",
+      "Multiplier": 1.5
+    },
+    {
+      "UpgradeID": 45,
+      "TargetTierID": 5,
+      "Cost": "2.5e12",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 46,
+      "TargetTierID": 6,
+      "Cost": "2.5e12",
+      "UpgradeType": "Revenue",
+      "Multiplier": 3.0
+    },
+    {
+      "UpgradeID": 47,
+      "TargetTierID": 0,
+      "Cost": "5e12",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 48,
+      "TargetTierID": 5,
+      "Cost": "1e13",
+      "UpgradeType": "Revenue",
+      "Multiplier": 5.0
+    },
+    {
+      "UpgradeID": 49,
+      "TargetTierID": 6,
+      "Cost": "1e13",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 50,
+      "TargetTierID": 7,
+      "Cost": "1e13",
+      "UpgradeType": "Revenue",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 51,
+      "TargetTierID": 5,
+      "Cost": "5e13",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.5
+    },
+    {
+      "UpgradeID": 52,
+      "TargetTierID": 6,
+      "Cost": "5e13",
+      "UpgradeType": "Revenue",
+      "Multiplier": 4.0
+    },
+    {
+      "UpgradeID": 53,
+      "TargetTierID": 7,
+      "Cost": "5e13",
+      "UpgradeType": "Speed",
+      "Multiplier": 1.5
+    },
+    {
+      "UpgradeID": 54,
+      "TargetTierID": 0,
+      "Cost": "2.5e14",
+      "UpgradeType": "Revenue",
+      "Multiplier": 5.0
+    },
+    {
+      "UpgradeID": 55,
+      "TargetTierID": 6,
+      "Cost": "2.5e14",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 56,
+      "TargetTierID": 7,
+      "Cost": "2.5e14",
+      "UpgradeType": "Revenue",
+      "Multiplier": 3.0
+    },
+    {
+      "UpgradeID": 57,
+      "TargetTierID": 6,
+      "Cost": "1e15",
+      "UpgradeType": "Revenue",
+      "Multiplier": 5.0
+    },
+    {
+      "UpgradeID": 58,
+      "TargetTierID": 7,
+      "Cost": "1e15",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 59,
+      "TargetTierID": 6,
+      "Cost": "5e15",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.5
+    },
+    {
+      "UpgradeID": 60,
+      "TargetTierID": 7,
+      "Cost": "5e15",
+      "UpgradeType": "Revenue",
+      "Multiplier": 4.0
+    },
+    {
+      "UpgradeID": 61,
+      "TargetTierID": 8,
+      "Cost": "5e15",
+      "UpgradeType": "Revenue",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 62,
+      "TargetTierID": 0,
+      "Cost": "1e16",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.5
+    },
+    {
+      "UpgradeID": 63,
+      "TargetTierID": 7,
+      "Cost": "2.5e16",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 64,
+      "TargetTierID": 8,
+      "Cost": "2.5e16",
+      "UpgradeType": "Speed",
+      "Multiplier": 1.5
+    },
+    {
+      "UpgradeID": 65,
+      "TargetTierID": 7,
+      "Cost": "1e17",
+      "UpgradeType": "Revenue",
+      "Multiplier": 5.0
+    },
+    {
+      "UpgradeID": 66,
+      "TargetTierID": 8,
+      "Cost": "1e17",
+      "UpgradeType": "Revenue",
+      "Multiplier": 3.0
+    },
+    {
+      "UpgradeID": 67,
+      "TargetTierID": 7,
+      "Cost": "5e17",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.5
+    },
+    {
+      "UpgradeID": 68,
+      "TargetTierID": 8,
+      "Cost": "5e17",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 69,
+      "TargetTierID": 9,
+      "Cost": "1e18",
+      "UpgradeType": "Revenue",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 70,
+      "TargetTierID": 8,
+      "Cost": "2.5e18",
+      "UpgradeType": "Revenue",
+      "Multiplier": 4.0
+    },
+    {
+      "UpgradeID": 71,
+      "TargetTierID": 0,
+      "Cost": "5e18",
+      "UpgradeType": "Revenue",
+      "Multiplier": 10.0
+    },
+    {
+      "UpgradeID": 72,
+      "TargetTierID": 9,
+      "Cost": "5e18",
+      "UpgradeType": "Speed",
+      "Multiplier": 1.5
+    },
+    {
+      "UpgradeID": 73,
+      "TargetTierID": 8,
+      "Cost": "1e19",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 74,
+      "TargetTierID": 9,
+      "Cost": "2.5e19",
+      "UpgradeType": "Revenue",
+      "Multiplier": 3.0
+    },
+    {
+      "UpgradeID": 75,
+      "TargetTierID": 8,
+      "Cost": "5e19",
+      "UpgradeType": "Revenue",
+      "Multiplier": 5.0
+    },
+    {
+      "UpgradeID": 76,
+      "TargetTierID": 9,
+      "Cost": "1e20",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 77,
+      "TargetTierID": 8,
+      "Cost": "2.5e20",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.5
+    },
+    {
+      "UpgradeID": 78,
+      "TargetTierID": 9,
+      "Cost": "5e20",
+      "UpgradeType": "Revenue",
+      "Multiplier": 4.0
+    },
+    {
+      "UpgradeID": 79,
+      "TargetTierID": 0,
+      "Cost": "1e21",
+      "UpgradeType": "Speed",
+      "Multiplier": 3.0
+    },
+    {
+      "UpgradeID": 80,
+      "TargetTierID": 9,
+      "Cost": "2.5e21",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.0
+    },
+    {
+      "UpgradeID": 81,
+      "TargetTierID": 9,
+      "Cost": "1e22",
+      "UpgradeType": "Revenue",
+      "Multiplier": 5.0
+    },
+    {
+      "UpgradeID": 82,
+      "TargetTierID": 9,
+      "Cost": "5e22",
+      "UpgradeType": "Speed",
+      "Multiplier": 2.5
+    },
+    {
+      "UpgradeID": 83,
+      "TargetTierID": 9,
+      "Cost": "2.5e23",
+      "UpgradeType": "Revenue",
+      "Multiplier": 10.0
     }
   ]
 }

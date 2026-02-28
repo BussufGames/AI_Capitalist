@@ -228,9 +228,9 @@ namespace AI_Capitalist.Data
 		{
 			GameData = new PlayerSaveData();
 			GameData.HighestUnlockedTier = 1;
-			GameData.CurrentBalance = initialBalance;
 			GameData.TiersData = new List<TierDynamicData>();
 			GameData.PurchasedUpgrades = new List<string>();
+			GameData.CurrentBalance = initialBalance;
 
 			SaveGame();
 			this.LogWarning("Player data has been hard-reset to default safely.");

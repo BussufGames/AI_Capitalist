@@ -65,7 +65,20 @@ namespace AI_Capitalist.UI
 			_uiManager = CoreManager.Instance.GetService<UIManager>();
 
 			// --- Setup Basic Text ---
-			nameText.text = data.Name;
+			if (data.TargetTierID == 0)
+			{
+				nameText.text = "Global Multiplier";
+			}
+			else
+			{
+				// Specific Tier (Fetch unique Name via UIManager dictionary)
+				var visualData = _uiManager.GetVisualDataForTier(data.TargetTierID);
+				if (visualData != null && nameText.text != null)
+				{
+					nameText.text = $"{visualData.DisplayName}";
+				}
+			}
+
 			multiplierText.text = $"X{data.Multiplier}";
 
 			BigDouble cost = BigDouble.Parse(data.Cost);
