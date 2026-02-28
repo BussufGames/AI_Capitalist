@@ -2,14 +2,15 @@
  * ----------------------------------------------------------------------------
  * Project: AI Capitalist
  * Author:  Bussuf Senior Dev
- * Date:    2023-10-31
+ * Date:    2026-02-28
  * ----------------------------------------------------------------------------
  * Description:
  * The Core Economy Engine. Holds the Master JSON table in memory.
  * ----------------------------------------------------------------------------
  * Change Log:
  * 2023-10-30 - Bussuf Senior Dev - Added TryGetTierConfig.
- * 2023-10-31 - Bussuf Senior Dev - Added LifetimeEarnings tracking and GlobalPrestigeMultiplier.
+ * 2023-10-31 - Bussuf Senior Dev - Added LifetimeEarnings tracking.
+ * 2026-02-28 - Bussuf Senior Dev - Added Upgrades caching from MasterTable.
  * ----------------------------------------------------------------------------
  */
 
@@ -27,6 +28,7 @@ namespace AI_Capitalist.Economy
 
 	public class EconomyManager : MonoBehaviour, IService
 	{
+		#region Events & Properties
 		public event Action<BigDouble> OnBalanceChanged;
 		public event Action OnBuyModeChanged;
 
@@ -34,10 +36,15 @@ namespace AI_Capitalist.Economy
 		public BigDouble LifetimeEarnings { get; private set; }
 		public BigDouble PrestigeTokens { get; private set; }
 		public BuyMode CurrentBuyMode { get; private set; } = BuyMode.x1;
+		#endregion
 
+		#region Fields
 		private Dictionary<int, TierStaticData> _masterTable = new Dictionary<int, TierStaticData>();
+		private Dictionary<string, UpgradeStaticData> _upgradesTable = new Dictionary<string, UpgradeStaticData>(); // NEW
 		private DataManager _dataManager;
+		#endregion
 
+		#region Initialization
 		private void Awake()
 		{
 			if (CoreManager.Instance != null)
@@ -54,7 +61,46 @@ namespace AI_Capitalist.Economy
 			LoadMasterTableConfig();
 			LoadPlayerEconomyData();
 		}
+		#endregion
 
+		#region Configuration Loading
+		private void LoadMasterTableConfig()
+		{
+			TextAsset jsonFile = Resources.Load<TextAsset>("MasterTable");
+			if (jsonFile != null)
+			{
+				MasterEconomyTable table = JsonConvert.DeserializeObject<MasterEconomyTable>(jsonFile.text);
+
+				// Load Tiers
+				if (table.Tiers != null)
+				{
+					foreach (var tier in table.Tiers)
+					{
+						_masterTable[tier.TierID] = tier;
+					}
+				}
+
+				// Load Upgrades
+				if (table.Upgrades != null)
+				{
+					foreach (var upg in table.Upgrades)
+					{
+						_upgradesTable[upg.UpgradeID] = upg;
+					}
+				}
+			}
+		}
+
+		private void LoadPlayerEconomyData()
+		{
+			CurrentBalance = BigDouble.Parse(_dataManager.GameData.CurrentBalance);
+			LifetimeEarnings = BigDouble.Parse(_dataManager.GameData.LifetimeEarnings);
+			PrestigeTokens = BigDouble.Parse(_dataManager.GameData.PrestigeTokens);
+			OnBalanceChanged?.Invoke(CurrentBalance);
+		}
+		#endregion
+
+		#region Economy Logic
 		public void ToggleBuyMode()
 		{
 			CurrentBuyMode = CurrentBuyMode switch
@@ -69,29 +115,6 @@ namespace AI_Capitalist.Economy
 			OnBuyModeChanged?.Invoke();
 		}
 
-		private void LoadMasterTableConfig()
-		{
-			TextAsset jsonFile = Resources.Load<TextAsset>("MasterTable");
-			if (jsonFile != null)
-			{
-				MasterEconomyTable table = JsonConvert.DeserializeObject<MasterEconomyTable>(jsonFile.text);
-				foreach (var tier in table.Tiers)
-				{
-					_masterTable[tier.TierID] = tier;
-				}
-			}
-		}
-
-		private void LoadPlayerEconomyData()
-		{
-			CurrentBalance = BigDouble.Parse(_dataManager.GameData.CurrentBalance);
-			LifetimeEarnings = BigDouble.Parse(_dataManager.GameData.LifetimeEarnings);
-			PrestigeTokens = BigDouble.Parse(_dataManager.GameData.PrestigeTokens);
-			OnBalanceChanged?.Invoke(CurrentBalance);
-		}
-
-		// --- PRESTIGE MATH ---
-		// Each token gives +10% bonus to all profits. So 10 tokens = 100% bonus (x2 multiplier)
 		public double GetGlobalPrestigeMultiplier()
 		{
 			return 1.0 + (PrestigeTokens.ToDouble() * 0.1);
@@ -108,10 +131,15 @@ namespace AI_Capitalist.Economy
 			return null;
 		}
 
+		public Dictionary<string, UpgradeStaticData> GetAllUpgrades()
+		{
+			return _upgradesTable;
+		}
+
 		public void AddIncome(BigDouble amount)
 		{
 			CurrentBalance += amount;
-			LifetimeEarnings += amount; // Track lifetime!
+			LifetimeEarnings += amount;
 			UpdateSaveData();
 		}
 
@@ -168,6 +196,7 @@ namespace AI_Capitalist.Economy
 			_dataManager.GameData.LifetimeEarnings = LifetimeEarnings.ToString();
 			OnBalanceChanged?.Invoke(CurrentBalance);
 		}
+		#endregion
 	}
 }
 

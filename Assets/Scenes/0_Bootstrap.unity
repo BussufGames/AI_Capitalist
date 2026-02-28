@@ -266,14 +266,15 @@ GameObject:
   m_Component:
   - component: {fileID: 1010257388}
   - component: {fileID: 1010257387}
-  - component: {fileID: 1010257390}
-  - component: {fileID: 1010257389}
   - component: {fileID: 1010257391}
+  - component: {fileID: 1010257389}
+  - component: {fileID: 1010257390}
   - component: {fileID: 1010257392}
   - component: {fileID: 1010257393}
   - component: {fileID: 1010257394}
   - component: {fileID: 1010257395}
   - component: {fileID: 1010257396}
+  - component: {fileID: 1010257397}
   m_Layer: 0
   m_Name: CORE_MANAGER
   m_TagString: Untagged
@@ -412,6 +413,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bb5e799e7f0dad54c93c428d2be89199, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AI_Capitalist.Gameplay.PrestigeManager
+--- !u!114 &1010257397
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1010257386}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f5b03fbc3ddd6e04d93d49929e8d3ab5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AI_Capitalist.Gameplay.UpgradesManager
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

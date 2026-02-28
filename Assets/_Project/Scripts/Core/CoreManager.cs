@@ -2,15 +2,16 @@
  * ----------------------------------------------------------------------------
  * Project: AI Capitalist
  * Author:  Bussuf Senior Dev
- * Date:    2023-10-31
+ * Date:    2026-02-28
  * ----------------------------------------------------------------------------
  * Description:
- * The backbone of the application. 
+ * The backbone of the application.
  * Manages the dependency injection and initialization order of all core services.
  * ----------------------------------------------------------------------------
  * Change Log:
  * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
  * 2023-10-31 - Bussuf Senior Dev - Added PrestigeManager to the initialization sequence.
+ * 2026-02-28 - Bussuf Senior Dev - Added UpgradesManager to the initialization sequence.
  * ----------------------------------------------------------------------------
  */
 
@@ -29,10 +30,13 @@ namespace AI_Capitalist.Core
 {
 	public class CoreManager : MonoBehaviour
 	{
+		#region Singleton & Services
 		public static CoreManager Instance { get; private set; }
 
 		private Dictionary<Type, IService> _services = new Dictionary<Type, IService>();
+		#endregion
 
+		#region Unity Lifecycle
 		private void Awake()
 		{
 			if (Instance != null && Instance != this)
@@ -46,7 +50,9 @@ namespace AI_Capitalist.Core
 			DontDestroyOnLoad(gameObject);
 			this.Log("CoreManager awoken and set to DontDestroyOnLoad.");
 		}
+		#endregion
 
+		#region Service Registration
 		public void RegisterService<T>(T service) where T : class, IService
 		{
 			Type type = typeof(T);
@@ -72,7 +78,9 @@ namespace AI_Capitalist.Core
 			this.LogError($"Service of type {type.Name} not found!");
 			return null;
 		}
+		#endregion
 
+		#region Bootstrapping Sequence
 		public void StartGameSequence()
 		{
 			this.Log("Starting Game Sequence...");
@@ -85,6 +93,9 @@ namespace AI_Capitalist.Core
 
 			// Setup Economy
 			InitializeService<EconomyManager>();
+
+			// NEW: Setup Upgrades System
+			InitializeService<UpgradesManager>();
 
 			// Setup Prestige BEFORE offline progress so multipliers apply correctly
 			InitializeService<PrestigeManager>();
@@ -116,13 +127,15 @@ namespace AI_Capitalist.Core
 				this.LogError($"Cannot initialize {typeof(T).Name} because it is missing!");
 			}
 		}
+		#endregion
 
-		// --- DEV TOOLS / RESET SUPPORT ---
+		#region DEV TOOLS / RESET SUPPORT
 		public void ClearAllServices()
 		{
 			_services.Clear();
 			this.LogWarning("All services cleared from CoreManager.");
 		}
+		#endregion
 	}
 }
 

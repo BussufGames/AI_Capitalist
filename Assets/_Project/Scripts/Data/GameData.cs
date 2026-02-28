@@ -2,17 +2,15 @@
  * ----------------------------------------------------------------------------
  * Project: AI Capitalist
  * Author:  Bussuf Senior Dev
- * Date:    2023-10-29
+ * Date:    2026-02-28
  * ----------------------------------------------------------------------------
  * Description:
  * Holds the Data Models for the player's save file.
  * ----------------------------------------------------------------------------
  * Change Log:
  * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
- * 2023-10-29 - Bussuf Senior Dev - Added JsonProperty attributes to fix deserialization.
- * 2023-10-29 - Bussuf Senior Dev - Added IsWorkingManually to persistent TierDynamicData.
- * 2023-10-30 - Bussuf Senior Dev - Added HighestUnlockedTier.
  * 2023-10-31 - Bussuf Senior Dev - Added LifetimeEarnings and PrestigeTokens.
+ * 2026-02-28 - Bussuf Senior Dev - Added PurchasedUpgrades list. Applied #region tags.
  * ----------------------------------------------------------------------------
  */
 
@@ -27,6 +25,7 @@ namespace AI_Capitalist.Data
 	[Serializable]
 	public class PlayerSaveData
 	{
+		#region General Data
 		[JsonProperty]
 		public string LastSaveTime { get; set; }
 
@@ -35,21 +34,30 @@ namespace AI_Capitalist.Data
 
 		[JsonProperty]
 		public int HighestUnlockedTier { get; set; } = 1;
+		#endregion
 
-		// --- PRESTIGE SYSTEM DATA ---
+		#region Prestige System Data
 		[JsonProperty]
 		public string LifetimeEarnings { get; set; } = "0"; // Used to calculate available prestige rewards
 
 		[JsonProperty]
 		public string PrestigeTokens { get; set; } = "0"; // The premium currency kept after reset
+		#endregion
 
+		#region Collections
 		[JsonProperty]
 		public List<TierDynamicData> TiersData { get; set; } = new List<TierDynamicData>();
+
+		// NEW: Tracks which upgrades the player has purchased by ID
+		[JsonProperty]
+		public List<string> PurchasedUpgrades { get; set; } = new List<string>();
+		#endregion
 	}
 
 	[Serializable]
 	public class TierDynamicData
 	{
+		#region Tier State
 		[JsonProperty]
 		public int TierID { get; set; }
 
@@ -73,13 +81,16 @@ namespace AI_Capitalist.Data
 
 		[JsonProperty]
 		public float CurrentAISpeedMulti { get; set; } = 2.0f;
+		#endregion
 
+		#region Constructors
 		public TierDynamicData(int tierID)
 		{
 			TierID = tierID;
 		}
 
 		public TierDynamicData() { }
+		#endregion
 	}
 }
 

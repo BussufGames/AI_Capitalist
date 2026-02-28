@@ -108,5 +108,25 @@
       "Base_Human_Salary_Per_Cycle": "200000",
       "AI_Hire_Cost": "50000000000"
     }
+  ],
+  "Upgrades": [
+    {
+      "UpgradeID": "upg_t1_speed_1",
+      "Name": "Faster Typing",
+      "Description": "Captcha Solvers are 2x Faster.",
+      "Cost": "150",
+      "TargetTierID": 1,
+      "Multiplier": 2.0,
+      "UpgradeType": "Speed"
+    },
+    {
+      "UpgradeID": "upg_global_rev_1",
+      "Name": "Server Optimization",
+      "Description": "All Businesses earn 3x Revenue.",
+      "Cost": "5000",
+      "TargetTierID": 0,
+      "Multiplier": 3.0,
+      "UpgradeType": "Revenue"
+    }
   ]
 }
