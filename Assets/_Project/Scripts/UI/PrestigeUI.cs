@@ -97,7 +97,7 @@ namespace AI_Capitalist.UI
 			if (_prestigeManager != null)
 			{
 				ascendButton.interactable = false;
-				_prestigeManager.ClaimPrestigeAndReset();
+				_prestigeManager.PerformPrestige();
 			}
 		}
 	}

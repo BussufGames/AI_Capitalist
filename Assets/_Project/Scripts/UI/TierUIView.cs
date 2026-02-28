@@ -19,6 +19,7 @@ using BreakInfinity;
 using System;
 using AI_Capitalist.Gameplay;
 using AI_Capitalist.Economy;
+using AI_Capitalist.Data;
 
 namespace AI_Capitalist.UI
 {
@@ -208,13 +209,15 @@ namespace AI_Capitalist.UI
 
 		private void UpdateStateImageDisplay()
 		{
-			if (_visualData == null) return;
+			var uiManager = Core.CoreManager.Instance.GetService<UIManager>();
+			if (uiManager == null) return;
+
 			if (_controller.DynamicData.CurrentState == Data.ManagerState.AI)
-				actionButtonStateImage.sprite = _visualData.StateAIRunning;
+				actionButtonStateImage.sprite = uiManager.StateAIRunning;
 			else if (_controller.DynamicData.CurrentState == Data.ManagerState.Human)
-				actionButtonStateImage.sprite = _controller.IsHumanOnStrike() ? _visualData.StateHumanStrike : _visualData.StateHumanWorking;
+				actionButtonStateImage.sprite = _controller.IsHumanOnStrike() ? uiManager.StateHumanStrike : uiManager.StateHumanWorking;
 			else
-				actionButtonStateImage.sprite = _visualData.StateManual;
+				actionButtonStateImage.sprite = uiManager.StateManual;
 		}
 
 		private void OnActionClicked()

@@ -22,6 +22,7 @@ namespace AI_Capitalist.UI
 	public class UpgradeItemUI : MonoBehaviour
 	{
 		#region UI References
+		[SerializeField] private Image targetIconImage; // NEW: Shows Business or Global Icon
 		[SerializeField] private TMP_Text nameText;
 		[SerializeField] private TMP_Text descriptionText;
 		[SerializeField] private TMP_Text costText;

@@ -2,31 +2,32 @@
  * ----------------------------------------------------------------------------
  * Project: AI Capitalist
  * Author:  Bussuf Senior Dev
- * Date:    2023-10-29
+ * Date:    2026-02-28
  * ----------------------------------------------------------------------------
  * Description:
  * A single reusable popup that displays Human/AI hiring options.
  * Calculates total AI cost (including active human debt).
  * ----------------------------------------------------------------------------
  * Change Log:
- * 2023-10-29 - Bussuf Senior Dev - Initial implementation.
- * 2023-10-29 - Bussuf Senior Dev - Updated OpenPopup to use VisualData DisplayName.
+ * 2026-02-28 - Restored original beautiful UI logic (DOTween + Status Colors).
  * ----------------------------------------------------------------------------
  */
 
+using AI_Capitalist.Core;
+using AI_Capitalist.Data;
+using AI_Capitalist.Economy;
+using AI_Capitalist.Gameplay;
+using BreakInfinity;
+using DG.Tweening;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
-using DG.Tweening;
-using BreakInfinity;
-using AI_Capitalist.Gameplay;
-using AI_Capitalist.Economy;
-using AI_Capitalist.Core;
 
 namespace AI_Capitalist.UI
 {
 	public class ManagerPopupUI : MonoBehaviour
 	{
+		#region UI References
 		[Header("Global Popup Elements")]
 		[SerializeField] private TMP_Text titleText;
 		[SerializeField] private Button closeButton;
@@ -43,6 +44,7 @@ namespace AI_Capitalist.UI
 		[SerializeField] private TMP_Text aiTotalCostText;
 		[SerializeField] private TMP_Text aiStatusText;
 		[SerializeField] private Button hireAIButton;
+		#endregion
 
 		private TierController _activeController;
 		private EconomyManager _economyManager;
@@ -58,7 +60,6 @@ namespace AI_Capitalist.UI
 		{
 			_activeController = controller;
 			_economyManager = CoreManager.Instance.GetService<EconomyManager>();
-
 			if (_economyManager == null || _activeController == null) return;
 
 			// Use the ScriptableObject name if available, otherwise fallback
@@ -66,7 +67,7 @@ namespace AI_Capitalist.UI
 			titleText.text = $"Manage: {displayName}";
 
 			_activeController.OnDataChanged += RefreshUI;
-			_economyManager.OnBalanceChanged += (b) => RefreshUI();
+			_economyManager.OnBalanceChanged += OnBalanceChangedHandler;
 
 			gameObject.SetActive(true);
 			RefreshUI();
@@ -81,6 +82,10 @@ namespace AI_Capitalist.UI
 			{
 				_activeController.OnDataChanged -= RefreshUI;
 			}
+			if (_economyManager != null)
+			{
+				_economyManager.OnBalanceChanged -= OnBalanceChangedHandler;
+			}
 
 			contentPanel.transform.DOScale(0f, 0.2f).SetEase(Ease.InBack).OnComplete(() =>
 			{
@@ -89,9 +94,14 @@ namespace AI_Capitalist.UI
 			});
 		}
 
+		private void OnBalanceChangedHandler(BigDouble newBalance)
+		{
+			if (gameObject.activeSelf) RefreshUI();
+		}
+
 		private void RefreshUI()
 		{
-			if (_activeController == null) return;
+			if (_activeController == null || _economyManager == null) return;
 
 			BigDouble balance = _economyManager.CurrentBalance;
 			var data = _activeController.DynamicData;
@@ -164,7 +174,3 @@ namespace AI_Capitalist.UI
 		}
 	}
 }
-
-// ----------------------------------------------------------------------------
-// EOF
-// ----------------------------------------------------------------------------

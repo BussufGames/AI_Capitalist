@@ -61,6 +61,8 @@ namespace AI_Capitalist.Gameplay
 		{
 			int highestUnlocked = _dataManager.GameData.HighestUnlockedTier;
 
+			ActiveTiers.Clear();
+
 			// Spawn only up to the highest unlocked tier
 			for (int i = 1; i <= highestUnlocked; i++)
 			{

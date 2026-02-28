@@ -2,37 +2,38 @@
  * ----------------------------------------------------------------------------
  * Project: AI Capitalist
  * Author:  Bussuf Senior Dev
- * Date:    2023-10-29
+ * Date:    2026-02-28
  * ----------------------------------------------------------------------------
  * Description:
  * Orchestrates the 'Local First, Cloud Second' save data architecture.
  * Safely compares Cloud timestamps before applying, preventing Reference Loss.
  * ----------------------------------------------------------------------------
  * Change Log:
- * 2023-10-28 - Bussuf Senior Dev - Initial implementation.
- * 2023-10-29 - Bussuf Senior Dev - Added Auto-Save and ApplicationQuit hooks.
- * 2023-10-29 - Bussuf Senior Dev - Exposed autoSaveInterval, added Cloud Save throttling.
- * 2023-10-29 - Bussuf Senior Dev - Added Timestamp comparison to avoid Lost Reference bug.
- * 2023-10-29 - Bussuf Senior Dev - Added initialBalance parameter for fresh saves.
+ * 2026-02-28 - Fixed Cloud Save sync logic (LoadCloudDataAsync returns string).
+ * 2026-02-28 - Replaced IsSignedIn with IsAuthenticated to match UGSManager.
+ * 2026-02-28 - Added safe ResetDataToDefault method guaranteeing Tier 1 unlock.
  * ----------------------------------------------------------------------------
  */
 
+using System;
+using System.IO;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using Newtonsoft.Json;
 using AI_Capitalist.Core;
 using AI_Capitalist.Services;
 using BussufGames.Core;
-using Newtonsoft.Json;
-using System;
-using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace AI_Capitalist.Data
 {
 	public class DataManager : MonoBehaviour, IService
 	{
+		#region Save & Economy Settings
 		[Header("Save Settings")]
 		[Tooltip("How often to auto-save to the Cloud (in seconds).")]
 		[SerializeField] private float autoSaveInterval = 30f;
-
 		[Tooltip("Minimum seconds between cloud saves to prevent Rate Limiting by UGS.")]
 		[SerializeField] private float cloudSaveThrottle = 5f;
 
@@ -41,12 +42,19 @@ namespace AI_Capitalist.Data
 		[SerializeField] private string initialBalance = "0";
 
 		private const string SAVE_KEY = "ai_cap_save_v1";
+		#endregion
+
+		#region Properties & Fields
 		public PlayerSaveData GameData { get; private set; }
 
+		private string _saveFilePath;
 		private float _lastCloudSaveTime = 0f;
+		#endregion
 
+		#region Initialization
 		private void Awake()
 		{
+			_saveFilePath = Path.Combine(Application.persistentDataPath, "savegame.json");
 			if (CoreManager.Instance != null)
 			{
 				CoreManager.Instance.RegisterService<DataManager>(this);
@@ -63,7 +71,8 @@ namespace AI_Capitalist.Data
 			{
 				this.LogWarning("No local save found. Creating new player profile.");
 				GameData = new PlayerSaveData();
-				GameData.CurrentBalance = initialBalance; // Set custom initial balance!
+				GameData.CurrentBalance = initialBalance;
+				GameData.HighestUnlockedTier = 1;
 				GameData.LastSaveTime = DateTime.UtcNow.ToString("O");
 
 				SaveLocalOnly();
@@ -72,6 +81,52 @@ namespace AI_Capitalist.Data
 			SyncWithCloudBackground();
 
 			InvokeRepeating(nameof(SaveGame), autoSaveInterval, autoSaveInterval);
+		}
+		#endregion
+
+		#region Save/Load Logic
+		private void LoadLocalData()
+		{
+			if (PlayerPrefs.HasKey(SAVE_KEY))
+			{
+				try
+				{
+					string json = PlayerPrefs.GetString(SAVE_KEY);
+					GameData = JsonConvert.DeserializeObject<PlayerSaveData>(json);
+
+					if (GameData == null) GameData = new PlayerSaveData();
+
+					if (GameData.TiersData == null) GameData.TiersData = new List<TierDynamicData>();
+					if (GameData.PurchasedUpgrades == null) GameData.PurchasedUpgrades = new List<string>();
+
+					// Failsafe: Ensure at least Tier 1 is always unlocked
+					if (GameData.HighestUnlockedTier < 1) GameData.HighestUnlockedTier = 1;
+
+					this.LogSuccess("Local game data loaded.");
+				}
+				catch (Exception e)
+				{
+					this.LogError($"Failed to load local data: {e.Message}");
+					GameData = new PlayerSaveData();
+					GameData.HighestUnlockedTier = 1;
+					GameData.CurrentBalance = initialBalance;
+				}
+			}
+			else
+			{
+				GameData = new PlayerSaveData();
+				GameData.HighestUnlockedTier = 1;
+				GameData.CurrentBalance = initialBalance;
+				this.Log("No local save found. Created new game data.");
+			}
+		}
+
+		private void SaveLocalOnly()
+		{
+			if (GameData == null) return;
+			string json = JsonConvert.SerializeObject(GameData, Formatting.None);
+			PlayerPrefs.SetString(SAVE_KEY, json);
+			PlayerPrefs.Save();
 		}
 
 		public void SaveGame()
@@ -95,34 +150,18 @@ namespace AI_Capitalist.Data
 			}
 		}
 
-		private void SaveLocalOnly()
-		{
-			if (GameData == null) return;
-			string json = JsonConvert.SerializeObject(GameData, Formatting.None);
-			PlayerPrefs.SetString(SAVE_KEY, json);
-			PlayerPrefs.Save();
-		}
-
-		private void LoadLocalData()
-		{
-			if (PlayerPrefs.HasKey(SAVE_KEY))
-			{
-				string json = PlayerPrefs.GetString(SAVE_KEY);
-				GameData = JsonConvert.DeserializeObject<PlayerSaveData>(json);
-				this.LogSuccess("Local game data loaded.");
-			}
-		}
-
+		// FIX: Correctly parses the direct string returned by UGSManager and uses IsAuthenticated
 		private async void SyncWithCloudBackground()
 		{
 			var ugs = CoreManager.Instance.GetService<UGSManager>();
 			if (ugs == null) return;
 
-			await System.Threading.Tasks.Task.Delay(2000);
+			await Task.Delay(2000);
 
 			if (ugs.IsAuthenticated)
 			{
 				string cloudJson = await ugs.LoadCloudDataAsync(SAVE_KEY);
+
 				if (!string.IsNullOrEmpty(cloudJson) && cloudJson != "{}")
 				{
 					try
@@ -134,6 +173,7 @@ namespace AI_Capitalist.Data
 						DateTime localTime = DateTime.MinValue;
 
 						DateTime.TryParse(cloudData.LastSaveTime, null, System.Globalization.DateTimeStyles.RoundtripKind, out cloudTime);
+
 						if (GameData != null && !string.IsNullOrEmpty(GameData.LastSaveTime))
 						{
 							DateTime.TryParse(GameData.LastSaveTime, null, System.Globalization.DateTimeStyles.RoundtripKind, out localTime);
@@ -180,6 +220,22 @@ namespace AI_Capitalist.Data
 				SaveGame();
 			}
 		}
+		#endregion
+
+		#region DEV TOOLS / RESET SUPPORT
+		// SECURE RESET METHOD: Ensures tier 1 is alive and resets all arrays correctly.
+		public void ResetDataToDefault()
+		{
+			GameData = new PlayerSaveData();
+			GameData.HighestUnlockedTier = 1;
+			GameData.CurrentBalance = initialBalance;
+			GameData.TiersData = new List<TierDynamicData>();
+			GameData.PurchasedUpgrades = new List<string>();
+
+			SaveGame();
+			this.LogWarning("Player data has been hard-reset to default safely.");
+		}
+		#endregion
 	}
 }
 

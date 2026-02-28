@@ -5,7 +5,10 @@
  * Date:    2026-02-28
  * ----------------------------------------------------------------------------
  * Description:
- * Advanced Developer Terminal. Includes Economy, Time, and Tier management tabs.
+ * Advanced Developer Terminal.
+ * ----------------------------------------------------------------------------
+ * Change Log:
+ * 2026-02-28 - Removed hacky data wipe. Hooked into DataManager.ResetDataToDefault.
  * ----------------------------------------------------------------------------
  */
 using System.Threading.Tasks;
@@ -17,12 +20,12 @@ using BreakInfinity;
 using AI_Capitalist.Economy;
 using AI_Capitalist.Gameplay;
 using AI_Capitalist.Data;
-using System.Collections.Generic;
 
 namespace AI_Capitalist.DevTools
 {
 	public class DevCheatMenu : MonoBehaviour
 	{
+		#region Fields & References
 		[Header("Tabs Configuration")]
 		[SerializeField] private GameObject economyTab;
 		[SerializeField] private GameObject timeTab;
@@ -34,7 +37,7 @@ namespace AI_Capitalist.DevTools
 		[SerializeField] private Button btnAdd1B;
 		[SerializeField] private Button btnAdd1T;
 		[SerializeField] private Button btnZeroFunds;
-		[SerializeField] private Button btnZeroLifetime; // <-- NEW BUTTON
+		[SerializeField] private Button btnZeroLifetime;
 		[SerializeField] private Button btnResetSave;
 
 		[Header("Time Buttons")]
@@ -67,31 +70,29 @@ namespace AI_Capitalist.DevTools
 
 		private int _currentTierIndex = 0;
 		private TierManager _tierManager;
+		#endregion
 
+		#region Lifecycle
 		private void Start()
 		{
-			// --- Tab Navigation Hooks ---
 			if (btnTabEconomy != null) btnTabEconomy.onClick.AddListener(() => ShowTab(0));
 			if (btnTabTime != null) btnTabTime.onClick.AddListener(() => ShowTab(1));
 			if (btnTabTiers != null) btnTabTiers.onClick.AddListener(() => ShowTab(2));
 
-			// --- Economy Hooks ---
 			if (btnAdd1K != null) btnAdd1K.onClick.AddListener(() => AddMoney(new BigDouble(1_000)));
 			if (btnAdd1M != null) btnAdd1M.onClick.AddListener(() => AddMoney(new BigDouble(1_000_000)));
 			if (btnAdd1B != null) btnAdd1B.onClick.AddListener(() => AddMoney(new BigDouble(1_000_000_000)));
 			if (btnAdd1T != null) btnAdd1T.onClick.AddListener(() => AddMoney(new BigDouble(1_000_000_000_000)));
 			if (btnZeroFunds != null) btnZeroFunds.onClick.AddListener(ZeroFunds);
-			if (btnZeroLifetime != null) btnZeroLifetime.onClick.AddListener(ZeroLifetime); // <-- HOOKED NEW BUTTON
+			if (btnZeroLifetime != null) btnZeroLifetime.onClick.AddListener(ZeroLifetime);
 			if (btnResetSave != null) btnResetSave.onClick.AddListener(ResetSave);
 
-			// --- Time Hooks ---
 			if (btnPause != null) btnPause.onClick.AddListener(() => Time.timeScale = 0f);
 			if (btnPlay != null) btnPlay.onClick.AddListener(() => Time.timeScale = 1f);
 			if (btnTimeX3 != null) btnTimeX3.onClick.AddListener(() => Time.timeScale = 3f);
 			if (btnTimeX10 != null) btnTimeX10.onClick.AddListener(() => Time.timeScale = 10f);
 			if (btnGlobalStrike != null) btnGlobalStrike.onClick.AddListener(ForceGlobalStrike);
 
-			// --- Tiers Hooks ---
 			if (btnPrevTier != null) btnPrevTier.onClick.AddListener(() => NavigateTier(-1));
 			if (btnNextTier != null) btnNextTier.onClick.AddListener(() => NavigateTier(1));
 			if (btnLvlMinus10 != null) btnLvlMinus10.onClick.AddListener(() => ModifyTierLevel(-10));
@@ -113,7 +114,9 @@ namespace AI_Capitalist.DevTools
 				UpdateTierDisplay();
 			}
 		}
+		#endregion
 
+		#region Logic Methods
 		public void ShowTab(int tabIndex)
 		{
 			if (economyTab != null) economyTab.SetActive(tabIndex == 0);
@@ -139,29 +142,17 @@ namespace AI_Capitalist.DevTools
 		{
 			var eco = Core.CoreManager.Instance.GetService<EconomyManager>();
 			if (eco != null) eco.ResetLifetimeEarnings();
-			Debug.Log("<color=yellow>DEV: Lifetime Earnings Reset to 0.</color>");
 		}
 
 		private async void ResetSave()
 		{
 			Time.timeScale = 1f;
 
-			// FIX: Wipe active memory data so OnDestroy doesn't save the old data back!
+			// CLEAN RESET DELEGATED TO DATAMANAGER
 			var dataManager = Core.CoreManager.Instance.GetService<DataManager>();
 			if (dataManager != null)
 			{
-				if (dataManager.GameData != null)
-				{
-					// Clear all fields manually since GameData's setter is private
-					dataManager.GameData.LastSaveTime = null;
-					dataManager.GameData.CurrentBalance = null;
-					dataManager.GameData.HighestUnlockedTier = 0;
-					dataManager.GameData.LifetimeEarnings = null;
-					dataManager.GameData.PrestigeTokens = null;
-					dataManager.GameData.TiersData = new List<TierDynamicData>();
-					dataManager.GameData.PurchasedUpgrades = new List<string>();
-				}
-				dataManager.SaveGame();
+				dataManager.ResetDataToDefault();
 			}
 
 			var eco = Core.CoreManager.Instance.GetService<EconomyManager>();
@@ -194,7 +185,6 @@ namespace AI_Capitalist.DevTools
 					tier.ForceStrike();
 				}
 			}
-			Debug.Log("<color=orange>DEV: Forced global strike on all Human managers!</color>");
 		}
 
 		private void NavigateTier(int direction)
@@ -275,5 +265,10 @@ namespace AI_Capitalist.DevTools
 			if (_currentTierIndex >= _tierManager.ActiveTiers.Count) return null;
 			return _tierManager.ActiveTiers[_currentTierIndex];
 		}
+		#endregion
 	}
 }
+
+// ----------------------------------------------------------------------------
+// EOF
+// ----------------------------------------------------------------------------

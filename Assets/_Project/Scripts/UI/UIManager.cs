@@ -2,11 +2,14 @@
  * ----------------------------------------------------------------------------
  * Project: AI Capitalist
  * Author:  Bussuf Senior Dev
- * Date:    2023-10-30
+ * Date:    2026-02-28
+ * ----------------------------------------------------------------------------
+ * Description:
+ * Central service for UI management, global visual assets, and Tier UI spawning.
  * ----------------------------------------------------------------------------
  * Change Log:
- * 2023-10-30 - Bussuf Senior Dev - Fixed EOC bug.
- * 2026-02-24 - Bussuf Senior Dev - Subscribed to OnOfflineProgressCalculated for background resuming.
+ * 2026-02-28 - Cached OfflineProgressManager to prevent OnDestroy errors during Prestige.
+ * 2026-02-28 - Restored original SceneLoaded Cross-Scene Architecture.
  * ----------------------------------------------------------------------------
  */
 
@@ -24,19 +27,38 @@ namespace AI_Capitalist.UI
 {
 	public class UIManager : MonoBehaviour, IService
 	{
+		#region Global Assets
+		[Header("Global Manager State Icons")]
+		public Sprite StateManual;
+		public Sprite StateHumanWorking;
+		public Sprite StateHumanStrike;
+		public Sprite StateAIRunning;
+
+		[Header("Global Upgrade Icons")]
+		public Sprite GlobalBonusIcon;
+		public Sprite TimeUpgradeIcon;
+		public Sprite RevenueUpgradeIcon;
+		#endregion
+
+		#region Prefabs
 		[Header("Prefabs")]
 		[SerializeField] private GameObject tierUIPrefab;
 		[SerializeField] private GameObject managerPopupPrefab;
 		[SerializeField] private GameObject offlinePopupPrefab;
 		[SerializeField] private GameObject unlockPanelPrefab;
+		#endregion
 
+		#region Fields
 		private Transform _uiContainer;
 		private ManagerPopupUI _activeManagerPopup;
 		private UnlockPanelUI _currentUnlockPanel;
 
 		private TierManager _tierManager;
 		private EconomyManager _economyManager;
+		private OfflineProgressManager _offlineManager; // Cached reference to avoid OnDestroy errors
+
 		private Dictionary<int, TierVisualData> _visualDataDict = new Dictionary<int, TierVisualData>();
+		#endregion
 
 		private void Awake()
 		{
@@ -48,8 +70,9 @@ namespace AI_Capitalist.UI
 		{
 			_tierManager = CoreManager.Instance.GetService<TierManager>();
 			_economyManager = CoreManager.Instance.GetService<EconomyManager>();
+			_offlineManager = CoreManager.Instance.GetService<OfflineProgressManager>(); // Cache it!
 
-			if (_tierManager == null || tierUIPrefab == null || unlockPanelPrefab == null)
+			if (_tierManager == null || tierUIPrefab == null || unlockPanelPrefab == null || managerPopupPrefab == null)
 			{
 				this.LogError("UIManager missing critical references!");
 				return;
@@ -60,29 +83,32 @@ namespace AI_Capitalist.UI
 			SceneManager.sceneLoaded += OnSceneLoaded;
 			_tierManager.OnTierUnlocked += HandleNewTierUnlocked;
 
-			// Listen for background resumes
-			var offlineMgr = CoreManager.Instance.GetService<OfflineProgressManager>();
-			if (offlineMgr != null)
+			if (_offlineManager != null)
 			{
-				offlineMgr.OnOfflineProgressCalculated += SpawnOfflinePopup;
+				_offlineManager.OnOfflineProgressCalculated += SpawnOfflinePopup;
 			}
 		}
 
 		private void OnDestroy()
 		{
 			SceneManager.sceneLoaded -= OnSceneLoaded;
-			if (_tierManager != null) _tierManager.OnTierUnlocked -= HandleNewTierUnlocked;
 
-			if (CoreManager.Instance != null)
+			if (_tierManager != null)
 			{
-				var offlineMgr = CoreManager.Instance.GetService<OfflineProgressManager>();
-				if (offlineMgr != null) offlineMgr.OnOfflineProgressCalculated -= SpawnOfflinePopup;
+				_tierManager.OnTierUnlocked -= HandleNewTierUnlocked;
+			}
+
+			// Clean unsubscribe without asking CoreManager
+			if (_offlineManager != null)
+			{
+				_offlineManager.OnOfflineProgressCalculated -= SpawnOfflinePopup;
 			}
 		}
 
 		private void LoadVisualData()
 		{
-			TierVisualData[] loadedData = Resources.LoadAll<TierVisualData>("Visuals");
+			_visualDataDict.Clear();
+			TierVisualData[] loadedData = Resources.LoadAll<TierVisualData>("TierVisuals");
 			foreach (var data in loadedData)
 				_visualDataDict[data.TierID] = data;
 		}
@@ -114,20 +140,17 @@ namespace AI_Capitalist.UI
 				_activeManagerPopup = popupObj.GetComponent<ManagerPopupUI>();
 				_activeManagerPopup.gameObject.SetActive(false);
 
-				// Check if offline progress happened on boot
-				var offlineMgr = CoreManager.Instance.GetService<OfflineProgressManager>();
-				if (offlineMgr != null && offlineMgr.HasOfflineProgress)
+				if (_offlineManager != null && _offlineManager.HasOfflineProgress)
 				{
-					SpawnOfflinePopup(offlineMgr.PendingTimeAway, offlineMgr.PendingOfflineEarnings);
+					SpawnOfflinePopup(_offlineManager.PendingTimeAway, _offlineManager.PendingOfflineEarnings);
 				}
 			}
 		}
 
-		// FIX: Extracted to a method so it can be called dynamically when returning from app background
 		private void SpawnOfflinePopup(System.TimeSpan timeAway, BreakInfinity.BigDouble earnings)
 		{
 			Canvas mainCanvas = Object.FindAnyObjectByType<Canvas>();
-			if (mainCanvas != null)
+			if (mainCanvas != null && offlinePopupPrefab != null)
 			{
 				GameObject offlineObj = Instantiate(offlinePopupPrefab, mainCanvas.transform);
 				offlineObj.name = "Offline_Popup_UI";
@@ -184,10 +207,18 @@ namespace AI_Capitalist.UI
 					_currentUnlockPanel = null;
 
 					SpawnSingleTierUI(newController, true);
-
 					SpawnUnlockPanelForNextTier();
 				});
 			}
+		}
+
+		public TierVisualData GetVisualDataForTier(int tierID)
+		{
+			if (_visualDataDict.TryGetValue(tierID, out var data))
+			{
+				return data;
+			}
+			return null;
 		}
 
 		public void OpenManagerPopup(TierController controller)
@@ -196,6 +227,10 @@ namespace AI_Capitalist.UI
 			{
 				_visualDataDict.TryGetValue(controller.StaticData.TierID, out TierVisualData visualData);
 				_activeManagerPopup.OpenPopup(controller, visualData);
+			}
+			else
+			{
+				Debug.LogWarning("UIManager: Popup is null. Was it destroyed?");
 			}
 		}
 	}

@@ -111,7 +111,7 @@
   ],
   "Upgrades": [
     {
-      "UpgradeID": "upg_t1_speed_1",
+      "UpgradeID": "1",
       "Name": "Faster Typing",
       "Description": "Captcha Solvers are 2x Faster.",
       "Cost": "150",
@@ -120,13 +120,22 @@
       "UpgradeType": "Speed"
     },
     {
-      "UpgradeID": "upg_global_rev_1",
+      "UpgradeID": "2",
       "Name": "Server Optimization",
       "Description": "All Businesses earn 3x Revenue.",
       "Cost": "5000",
       "TargetTierID": 0,
       "Multiplier": 3.0,
       "UpgradeType": "Revenue"
+    },
+    {
+      "UpgradeID": "3",
+      "Name": "Advanced Server Optimization",
+      "Description": "T2 are 5x Faster.",
+      "Cost": "10",
+      "TargetTierID": 2,
+      "Multiplier": 500.0,
+      "UpgradeType": "Speed"
     }
   ]
 }
