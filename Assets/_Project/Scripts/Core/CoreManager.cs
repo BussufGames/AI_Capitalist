@@ -28,6 +28,7 @@ using UnityEngine.SceneManagement;
 
 namespace AI_Capitalist.Core
 {
+	[DefaultExecutionOrder(-100)]
 	public class CoreManager : MonoBehaviour
 	{
 		#region Singleton & Services
