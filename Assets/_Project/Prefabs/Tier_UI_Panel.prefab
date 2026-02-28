@@ -217,7 +217,7 @@ MonoBehaviour:
   milestoneBarFill: {fileID: 2539375202141623629}
   actionButtonStateImage: {fileID: 8043200032775289657}
   overdriveFlowImage: {fileID: 7880583843339777653}
-  overdriveScrollSpeed: 2
+  overdriveScrollSpeed: 0.88
   lightsContainer: {fileID: 4409319102666692749}
   lightImages:
   - {fileID: 2605901104645780726}
@@ -296,7 +296,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 7482667652216324306, guid: c429238d073769e45ad14fea18bdd86b, type: 3}
+  m_Sprite: {fileID: -5678386360063871151, guid: 77122c579682ae7498f00e1a1a421bfb, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1

@@ -158,12 +158,12 @@ namespace AI_Capitalist.UI
 				if (overdriveFlowImage != null) overdriveFlowImage.gameObject.SetActive(true);
 
 				BigDouble revPerSec = revPerCycle / _controller.GetCurrentCycleTime();
-				revenueText.text = $"Rev: ${revPerSec.ToCurrencyString()} / sec";
+				revenueText.text = $"${revPerSec.ToCurrencyString()}/ sec";
 			}
 			else
 			{
 				if (overdriveFlowImage != null) overdriveFlowImage.gameObject.SetActive(false);
-				revenueText.text = $"Rev: ${revPerCycle.ToCurrencyString()}";
+				revenueText.text = $"${revPerCycle.ToCurrencyString()}";
 			}
 
 			UpdateBuyButtonDisplay();

@@ -276,8 +276,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 212.2, y: -85}
-  m_SizeDelta: {x: -785.12, y: -398.9276}
+  m_AnchoredPosition: {x: 212.19998, y: -80.2251}
+  m_SizeDelta: {x: -785.12, y: -402.5884}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4717781251991088505
 CanvasRenderer:
@@ -334,10 +334,10 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 16.1
+  m_fontSize: 23.55
   m_fontSizeBase: 16.1
   m_fontWeight: 400
-  m_enableAutoSizing: 0
+  m_enableAutoSizing: 1
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 1
@@ -1375,8 +1375,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 197, y: -73}
-  m_SizeDelta: {x: -797.7241, y: -377.4477}
+  m_AnchoredPosition: {x: 197, y: -67.362}
+  m_SizeDelta: {x: -797.7241, y: -373.13}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5330060000521616264
 CanvasRenderer:
@@ -1433,7 +1433,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 20.15
+  m_fontSize: 22.15
   m_fontSizeBase: 18.2
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -2363,8 +2363,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 186.82748, y: 12.570686}
-  m_SizeDelta: {x: 477.6552, y: 143.8573}
+  m_AnchoredPosition: {x: 186.82748, y: 26.09}
+  m_SizeDelta: {x: 477.6552, y: 116.82}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1934376986016245057
 CanvasRenderer:
@@ -2394,7 +2394,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: AI bot that will work 24/7 no strikes no rests
+  m_text: 'AI works faster
+
+    AI works 24/7'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -2421,7 +2423,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 46
+  m_fontSize: 51.5
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
